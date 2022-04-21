@@ -1,22 +1,28 @@
 package metric
 
-type metrics map[string]Gauge
+type gauges map[string]Gauge
+type counters map[string]Counter
 
 type Repository struct {
-	Metrics   metrics
-	PollCount Counter
+	Gauges   gauges
+	Counters counters
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		Metrics: metrics{},
+		Gauges:   gauges{},
+		Counters: counters{},
 	}
 }
 
 func (m *Repository) UpdateMetric(key string, value Gauge) {
-	m.Metrics[key] = value
+	m.Gauges[key] = value
+
+	//fmt.Println(key, value)
 }
 
-func (m *Repository) UpdateCount(value Counter) {
-	m.PollCount += value
+func (m *Repository) UpdateCount(key string, value Counter) {
+	m.Counters[key] += value
+
+	//fmt.Println(key, m.Counters[key])
 }

@@ -30,7 +30,7 @@ func (c Client) Send(metrics Metrics, pollCount Counter) error {
 }
 
 func (c Client) sendGauge(name string, value Gauge) error {
-	_, err := http.Post(
+	response, err := http.Post(
 		fmt.Sprintf(
 			"http://127.0.0.1:8080/update/gauge/%s/%s",
 			name,
@@ -44,11 +44,13 @@ func (c Client) sendGauge(name string, value Gauge) error {
 		return err
 	}
 
+	defer response.Body.Close()
+
 	return nil
 }
 
 func (c Client) sendCounter(name string, value Counter) error {
-	_, err := http.Post(
+	response, err := http.Post(
 		fmt.Sprintf(
 			"http://127.0.0.1:8080/update/counter/%s/%s",
 			name,
@@ -61,6 +63,8 @@ func (c Client) sendCounter(name string, value Counter) error {
 	if err != nil {
 		return err
 	}
+
+	defer response.Body.Close()
 
 	return nil
 }

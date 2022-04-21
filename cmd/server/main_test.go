@@ -31,19 +31,8 @@ func TestSaveMetricHandler(t *testing.T) {
 			key:    "Alloc",
 			value:  "0.01",
 			want: want{
-				code:        404,
-				response:    "Not found",
-				contentType: "text/plain; charset=utf-8",
-			},
-		},
-		{
-			name:   "key not exists",
-			format: "gauge",
-			key:    "Alloce",
-			value:  "0.01",
-			want: want{
-				code:        400,
-				response:    "Name of metric incorrect",
+				code:        501,
+				response:    "Not implemented",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -67,6 +56,28 @@ func TestSaveMetricHandler(t *testing.T) {
 				code:        400,
 				response:    "Value of metric incorrect",
 				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name:   "success counter",
+			format: "counter",
+			key:    "TestCounter",
+			value:  "10",
+			want: want{
+				code:        200,
+				response:    "",
+				contentType: "",
+			},
+		},
+		{
+			name:   "success gauge",
+			format: "gauge",
+			key:    "TestGauge",
+			value:  "10.0001",
+			want: want{
+				code:        200,
+				response:    "",
+				contentType: "",
 			},
 		},
 	}
