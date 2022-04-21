@@ -1,34 +1,29 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/vllvll/devops/internal/metric"
 	"log"
 	"math/rand"
-	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
-	"strconv"
 	"syscall"
 	"time"
 )
 
-type gauge float64
-type counter int64
-
 var pollInterval = 2
 var reportInterval = 10
 
-type Metrics map[string]gauge
+var pollTick = time.Tick(time.Duration(pollInterval) * time.Second)
+var reportTick = time.Tick(time.Duration(reportInterval) * time.Second)
 
 func main() {
-	var pollCount counter
 	var mem runtime.MemStats
-	metrics := Metrics{}
+	var pollCount metric.Counter
+	metrics := metric.Metrics{}
 
-	var pollTick = time.Tick(time.Duration(pollInterval) * time.Second)
-	var reportTick = time.Tick(time.Duration(reportInterval) * time.Second)
+	client := metric.NewClient()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
@@ -36,55 +31,44 @@ func main() {
 	for {
 		select {
 		case <-c:
-			fmt.Println("Break the loop")
+			fmt.Println("Graceful shutdown")
 
 			return
 		case <-pollTick:
-			fmt.Println("poll tick")
-
 			pollCount++
 			runtime.ReadMemStats(&mem)
 
-			metrics["Alloc"] = gauge(mem.Alloc)
-			metrics["BuckHashSys"] = gauge(mem.BuckHashSys)
-			metrics["Frees"] = gauge(mem.Frees)
-			metrics["GCCPUFraction"] = gauge(mem.GCCPUFraction)
-			metrics["GCSys"] = gauge(mem.GCSys)
-			metrics["HeapAlloc"] = gauge(mem.HeapAlloc)
-			metrics["HeapIdle"] = gauge(mem.HeapIdle)
-			metrics["HeapInuse"] = gauge(mem.HeapInuse)
-			metrics["HeapObjects"] = gauge(mem.HeapObjects)
-			metrics["HeapReleased"] = gauge(mem.HeapReleased)
-			metrics["HeapSys"] = gauge(mem.HeapSys)
-			metrics["LastGC"] = gauge(mem.LastGC)
-			metrics["Lookups"] = gauge(mem.Lookups)
-			metrics["MCacheInuse"] = gauge(mem.MCacheInuse)
-			metrics["MCacheSys"] = gauge(mem.MCacheSys)
-			metrics["MSpanInuse"] = gauge(mem.MSpanInuse)
-			metrics["MSpanSys"] = gauge(mem.MSpanSys)
-			metrics["Mallocs"] = gauge(mem.Mallocs)
-			metrics["NextGC"] = gauge(mem.NextGC)
-			metrics["NumForcedGC"] = gauge(mem.NumForcedGC)
-			metrics["NumGC"] = gauge(mem.NumGC)
-			metrics["OtherSys"] = gauge(mem.OtherSys)
-			metrics["PauseTotalNs"] = gauge(mem.PauseTotalNs)
-			metrics["StackInuse"] = gauge(mem.StackInuse)
-			metrics["StackSys"] = gauge(mem.StackSys)
-			metrics["Sys"] = gauge(mem.Sys)
-			metrics["TotalAlloc"] = gauge(mem.TotalAlloc)
-			metrics["RandomValue"] = gauge(rand.Float64())
+			metrics["Alloc"] = metric.Gauge(mem.Alloc)
+			metrics["BuckHashSys"] = metric.Gauge(mem.BuckHashSys)
+			metrics["Frees"] = metric.Gauge(mem.Frees)
+			metrics["GCCPUFraction"] = metric.Gauge(mem.GCCPUFraction)
+			metrics["GCSys"] = metric.Gauge(mem.GCSys)
+			metrics["HeapAlloc"] = metric.Gauge(mem.HeapAlloc)
+			metrics["HeapIdle"] = metric.Gauge(mem.HeapIdle)
+			metrics["HeapInuse"] = metric.Gauge(mem.HeapInuse)
+			metrics["HeapObjects"] = metric.Gauge(mem.HeapObjects)
+			metrics["HeapReleased"] = metric.Gauge(mem.HeapReleased)
+			metrics["HeapSys"] = metric.Gauge(mem.HeapSys)
+			metrics["LastGC"] = metric.Gauge(mem.LastGC)
+			metrics["Lookups"] = metric.Gauge(mem.Lookups)
+			metrics["MCacheInuse"] = metric.Gauge(mem.MCacheInuse)
+			metrics["MCacheSys"] = metric.Gauge(mem.MCacheSys)
+			metrics["MSpanInuse"] = metric.Gauge(mem.MSpanInuse)
+			metrics["MSpanSys"] = metric.Gauge(mem.MSpanSys)
+			metrics["Mallocs"] = metric.Gauge(mem.Mallocs)
+			metrics["NextGC"] = metric.Gauge(mem.NextGC)
+			metrics["NumForcedGC"] = metric.Gauge(mem.NumForcedGC)
+			metrics["NumGC"] = metric.Gauge(mem.NumGC)
+			metrics["OtherSys"] = metric.Gauge(mem.OtherSys)
+			metrics["PauseTotalNs"] = metric.Gauge(mem.PauseTotalNs)
+			metrics["StackInuse"] = metric.Gauge(mem.StackInuse)
+			metrics["StackSys"] = metric.Gauge(mem.StackSys)
+			metrics["Sys"] = metric.Gauge(mem.Sys)
+			metrics["TotalAlloc"] = metric.Gauge(mem.TotalAlloc)
+			metrics["RandomValue"] = metric.Gauge(rand.Float64())
 
 		case <-reportTick:
-			fmt.Println("report tick")
-
-			for metric, value := range metrics {
-				err := updateGauge(metric, value)
-				if err != nil {
-					log.Printf("can't send report: %v\n", err)
-				}
-			}
-
-			err := updateCounter("PollCount", pollCount)
+			err := client.Send(metrics, pollCount)
 			if err != nil {
 				log.Printf("can't send report: %v\n", err)
 			}
@@ -92,36 +76,4 @@ func main() {
 			pollCount = 0
 		}
 	}
-}
-
-func updateGauge(name string, value gauge) error {
-	_, err := http.Post(
-		fmt.Sprintf(
-			"http://127.0.0.1:8080/update/gauge/%s/%s",
-			name,
-			strconv.FormatFloat(float64(value), 'f', 6, 64),
-		),
-		"text/plain",
-		bytes.NewBuffer([]byte("")),
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func updateCounter(name string, value counter) error {
-	_, err := http.Post(
-		fmt.Sprintf("http://127.0.0.1:8080/update/counter/%s/%d", name, value),
-		"text/plain",
-		bytes.NewBuffer([]byte("")),
-	)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
