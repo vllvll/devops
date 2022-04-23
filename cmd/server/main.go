@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"github.com/go-chi/chi/v5"
 	"github.com/vllvll/devops/internal/metric"
+	routerChi "github.com/vllvll/devops/pkg/router"
 	"log"
 	"net/http"
 	"os"
@@ -16,12 +18,19 @@ func main() {
 	metricConstants := metric.NewConstants()
 	metricHandler := metric.NewHandler(metricRepository, metricConstants)
 
+	r := routerChi.CreateRouter()
+
+	r.Get("/", metricHandler.GetAll())
+	r.Route("/value/", func(r chi.Router) {
+		r.Get("/gauge/{key:[A-Za-z]+}", metricHandler.GetGauge())
+		r.Get("/counter/{key:[A-Za-z]+}", metricHandler.GetCounter())
+	})
+	r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z]+}/{value:[A-Za-z0-9.]+}", metricHandler.SaveMetric())
+
 	httpServer := &http.Server{
 		Addr:    "127.0.0.1:8080",
-		Handler: metricHandler.SaveMetric(),
+		Handler: r,
 	}
-
-	http.HandleFunc("/update/", metricHandler.SaveMetric())
 
 	go func() {
 		if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {

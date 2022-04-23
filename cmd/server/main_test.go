@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/vllvll/devops/internal/metric"
-	"io"
+	routerChi "github.com/vllvll/devops/pkg/router"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -32,7 +34,7 @@ func TestSaveMetricHandler(t *testing.T) {
 			value:  "0.01",
 			want: want{
 				code:        501,
-				response:    "Not implemented",
+				response:    "Not Implemented",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -43,7 +45,7 @@ func TestSaveMetricHandler(t *testing.T) {
 			value:  "ffff",
 			want: want{
 				code:        400,
-				response:    "Value of metric incorrect",
+				response:    "Bad Request",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -54,7 +56,7 @@ func TestSaveMetricHandler(t *testing.T) {
 			value:  "ffff",
 			want: want{
 				code:        400,
-				response:    "Value of metric incorrect",
+				response:    "Bad Request",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -83,31 +85,33 @@ func TestSaveMetricHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(
-				http.MethodPost,
-				fmt.Sprintf("/update/%s/%s/%s", tt.format, tt.key, tt.value),
-				nil,
-			)
-
 			constants := metric.NewConstants()
 			repository := metric.NewRepository()
 			handler := metric.NewHandler(repository, constants)
 
-			w := httptest.NewRecorder()
-			h := handler.SaveMetric()
-			h.ServeHTTP(w, request)
-			res := w.Result()
+			r := routerChi.CreateRouter()
+			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())
 
-			assert.Equal(t, tt.want.code, w.Code)
+			ts := httptest.NewServer(r)
+			defer ts.Close()
 
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
+			request, err := http.NewRequest(
+				http.MethodPost,
+				ts.URL+fmt.Sprintf("/update/%s/%s/%s", tt.format, tt.key, tt.value),
+				nil,
+			)
+			require.NoError(t, err)
 
-			assert.Equal(t, tt.want.response, strings.Trim(string(resBody), "\n"))
-			assert.Equal(t, res.Header.Get("Content-Type"), tt.want.contentType)
+			response, err := http.DefaultClient.Do(request)
+			require.NoError(t, err)
+
+			responseBody, err := ioutil.ReadAll(response.Body)
+			require.NoError(t, err)
+			defer response.Body.Close()
+
+			assert.Equal(t, tt.want.code, response.StatusCode)
+			assert.Equal(t, tt.want.response, strings.Trim(string(responseBody), "\n"))
+			assert.Equal(t, response.Header.Get("Content-Type"), tt.want.contentType)
 		})
 	}
 }
