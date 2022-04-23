@@ -90,7 +90,7 @@ func TestSaveMetricHandler(t *testing.T) {
 			handler := metric.NewHandler(repository, constants)
 
 			r := routerChi.CreateRouter()
-			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())
+			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())
 
 			ts := httptest.NewServer(r)
 			defer ts.Close()

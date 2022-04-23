@@ -34,7 +34,7 @@ func (c Client) sendGauge(name string, value Gauge) error {
 		fmt.Sprintf(
 			"http://127.0.0.1:8080/update/gauge/%s/%s",
 			name,
-			strconv.FormatFloat(float64(value), 'f', 6, 64),
+			strconv.FormatFloat(float64(value), 'f', 3, 64),
 		),
 		"text/plain",
 		bytes.NewBuffer([]byte("")),

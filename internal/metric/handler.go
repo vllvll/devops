@@ -62,7 +62,7 @@ func (h Handler) GetAll() http.HandlerFunc {
 
 		answer := "Gauges:\n"
 		for key, value := range gauges {
-			answer += fmt.Sprintf("%s - %s\n", key, strconv.FormatFloat(float64(value), 'f', 6, 64))
+			answer += fmt.Sprintf("%s - %s\n", key, strconv.FormatFloat(float64(value), 'f', 3, 64))
 		}
 
 		answer += "Counters:\n"
@@ -93,9 +93,7 @@ func (h Handler) GetGauge() http.HandlerFunc {
 		}
 
 		rw.WriteHeader(http.StatusOK)
-		rw.Write([]byte(strconv.FormatFloat(float64(value), 'f', 6, 64)))
-
-		return
+		rw.Write([]byte(strconv.FormatFloat(float64(value), 'f', 3, 64)))
 	}
 }
 
@@ -117,7 +115,5 @@ func (h Handler) GetCounter() http.HandlerFunc {
 
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(strconv.FormatInt(int64(value), 10)))
-
-		return
 	}
 }
