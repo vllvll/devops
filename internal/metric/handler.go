@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
@@ -9,13 +10,35 @@ import (
 
 type Handler struct {
 	repository *Repository
-	constants  *Сonstants
+	constants  *Constants
 }
 
-func NewHandler(repository *Repository, constants *Сonstants) *Handler {
+func NewHandler(repository *Repository, constants *Constants) *Handler {
 	return &Handler{
 		repository: repository,
 		constants:  constants,
+	}
+}
+
+func (h Handler) SaveMetricJson() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		var metric Metrics
+
+		if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+
+			return
+		}
+
+		switch metric.MType {
+		case "gauge":
+			h.repository.UpdateMetric(metric.MType, Gauge(*metric.Value))
+
+		case "counter":
+			h.repository.UpdateCount(metric.MType, Counter(*metric.Delta))
+		}
+
+		rw.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -73,6 +96,56 @@ func (h Handler) GetAll() http.HandlerFunc {
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(answer))
+	}
+}
+
+func (h Handler) GetMetric() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		var metric Metrics
+
+		if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+
+			return
+		}
+
+		switch metric.MType {
+		case "gauge":
+			var value float64
+
+			gauge, err := h.repository.GetGaugeByKey(metric.MType)
+			if err != nil {
+				http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+
+				return
+			}
+
+			value = float64(gauge)
+			metric.Value = &value
+
+		case "counter":
+			var value int64
+
+			counter, err := h.repository.GetCounterByKey(metric.MType)
+			if err != nil {
+				http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+
+				return
+			}
+
+			value = int64(counter)
+			metric.Delta = &value
+		}
+
+		response, err := json.Marshal(metric)
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+
+			return
+		}
+
+		rw.WriteHeader(http.StatusOK)
+		rw.Write(response)
 	}
 }
 
