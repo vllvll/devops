@@ -1,10 +1,16 @@
 package metric
 
-type Сonstants struct {
+const GaugeType = "gauge"
+const CounterType = "counter"
+
+const GaugeRandomValue = "RandomValue"
+const CounterPollCount = "PollCount"
+
+type Constants struct {
 	names []string
 }
 
-var metricNames = []string{
+var gaugeNames = []string{
 	"Alloc",
 	"BuckHashSys",
 	"Frees",
@@ -32,19 +38,17 @@ var metricNames = []string{
 	"StackSys",
 	"Sys",
 	"TotalAlloc",
-	"RandomValue",
-	"PollCount",
 }
 
-func NewConstants() *Сonstants {
-	return &Сonstants{
-		names: metricNames,
+func NewConstants() *Constants {
+	return &Constants{
+		names: gaugeNames,
 	}
 }
 
-func (m Сonstants) In(str string) bool {
-	for _, metric := range m.names {
-		if metric == str {
+func (m Constants) In(str string) bool {
+	for _, name := range m.names {
+		if name == str {
 			return true
 		}
 	}

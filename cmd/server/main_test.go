@@ -85,9 +85,8 @@ func TestSaveMetricHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			constants := metric.NewConstants()
 			repository := metric.NewRepository()
-			handler := metric.NewHandler(repository, constants)
+			handler := metric.NewHandler(repository)
 
 			r := routerChi.CreateRouter()
 			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())

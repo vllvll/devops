@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"reflect"
 	"runtime"
 	"syscall"
 	"time"
@@ -21,9 +22,10 @@ var reportTick = time.Tick(time.Duration(reportInterval) * time.Second)
 func main() {
 	var mem runtime.MemStats
 	var pollCount metric.Counter
-	metrics := metric.Metrics{}
+	gauges := metric.Gauges{}
 
-	client := metric.NewClient()
+	sender := metric.NewClient()
+	fields := metric.NewConstants()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
@@ -38,37 +40,32 @@ func main() {
 			pollCount++
 			runtime.ReadMemStats(&mem)
 
-			metrics["Alloc"] = metric.Gauge(mem.Alloc)
-			metrics["BuckHashSys"] = metric.Gauge(mem.BuckHashSys)
-			metrics["Frees"] = metric.Gauge(mem.Frees)
-			metrics["GCCPUFraction"] = metric.Gauge(mem.GCCPUFraction)
-			metrics["GCSys"] = metric.Gauge(mem.GCSys)
-			metrics["HeapAlloc"] = metric.Gauge(mem.HeapAlloc)
-			metrics["HeapIdle"] = metric.Gauge(mem.HeapIdle)
-			metrics["HeapInuse"] = metric.Gauge(mem.HeapInuse)
-			metrics["HeapObjects"] = metric.Gauge(mem.HeapObjects)
-			metrics["HeapReleased"] = metric.Gauge(mem.HeapReleased)
-			metrics["HeapSys"] = metric.Gauge(mem.HeapSys)
-			metrics["LastGC"] = metric.Gauge(mem.LastGC)
-			metrics["Lookups"] = metric.Gauge(mem.Lookups)
-			metrics["MCacheInuse"] = metric.Gauge(mem.MCacheInuse)
-			metrics["MCacheSys"] = metric.Gauge(mem.MCacheSys)
-			metrics["MSpanInuse"] = metric.Gauge(mem.MSpanInuse)
-			metrics["MSpanSys"] = metric.Gauge(mem.MSpanSys)
-			metrics["Mallocs"] = metric.Gauge(mem.Mallocs)
-			metrics["NextGC"] = metric.Gauge(mem.NextGC)
-			metrics["NumForcedGC"] = metric.Gauge(mem.NumForcedGC)
-			metrics["NumGC"] = metric.Gauge(mem.NumGC)
-			metrics["OtherSys"] = metric.Gauge(mem.OtherSys)
-			metrics["PauseTotalNs"] = metric.Gauge(mem.PauseTotalNs)
-			metrics["StackInuse"] = metric.Gauge(mem.StackInuse)
-			metrics["StackSys"] = metric.Gauge(mem.StackSys)
-			metrics["Sys"] = metric.Gauge(mem.Sys)
-			metrics["TotalAlloc"] = metric.Gauge(mem.TotalAlloc)
-			metrics["RandomValue"] = metric.Gauge(rand.Float64())
+			memReflect := reflect.ValueOf(&mem).Elem()
+
+			for i := 0; i < memReflect.NumField(); i++ {
+				var memValue metric.Gauge
+				memName := memReflect.Type().Field(i).Name
+
+				if fields.In(memName) {
+					switch memReflect.Field(i).Kind() {
+					case reflect.Uint64:
+						memValue = metric.Gauge(memReflect.Field(i).Interface().(uint64))
+					case reflect.Uint32:
+						memValue = metric.Gauge(memReflect.Field(i).Interface().(uint32))
+					case reflect.Float64:
+						memValue = metric.Gauge(memReflect.Field(i).Interface().(float64))
+					default:
+						panic("Это ключ не имеет обработанного типа")
+					}
+
+					gauges[memName] = memValue
+				}
+			}
+
+			gauges[metric.GaugeRandomValue] = metric.Gauge(rand.Float64())
 
 		case <-reportTick:
-			err := client.Send(metrics, pollCount)
+			err := sender.Send(gauges, pollCount)
 			if err != nil {
 				log.Printf("can't send report: %v\n", err)
 			}

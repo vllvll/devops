@@ -15,17 +15,18 @@ import (
 
 func main() {
 	metricRepository := metric.NewRepository()
-	metricConstants := metric.NewConstants()
-	metricHandler := metric.NewHandler(metricRepository, metricConstants)
+	metricHandler := metric.NewHandler(metricRepository)
 
 	r := routerChi.CreateRouter()
 
 	r.Get("/", metricHandler.GetAll())
 	r.Route("/value/", func(r chi.Router) {
+		r.Post("/", metricHandler.GetMetricJSON())
 		r.Get("/gauge/{key:[A-Za-z0-9]+}", metricHandler.GetGauge())
 		r.Get("/counter/{key:[A-Za-z0-9]+}", metricHandler.GetCounter())
 	})
 	r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", metricHandler.SaveMetric())
+	r.Post("/update/", metricHandler.SaveMetricJSON())
 
 	httpServer := &http.Server{
 		Addr:    "127.0.0.1:8080",
