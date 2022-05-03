@@ -20,7 +20,7 @@ func NewHandler(repository *Repository, constants *Constants) *Handler {
 	}
 }
 
-func (h Handler) SaveMetricJson() http.HandlerFunc {
+func (h Handler) SaveMetricJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var metric Metrics
 
@@ -99,7 +99,7 @@ func (h Handler) GetAll() http.HandlerFunc {
 	}
 }
 
-func (h Handler) GetMetric() http.HandlerFunc {
+func (h Handler) GetMetricJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var metric Metrics
 
@@ -144,6 +144,7 @@ func (h Handler) GetMetric() http.HandlerFunc {
 			return
 		}
 
+		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		rw.Write(response)
 	}
