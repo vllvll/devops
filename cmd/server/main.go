@@ -15,8 +15,7 @@ import (
 
 func main() {
 	metricRepository := metric.NewRepository()
-	metricConstants := metric.NewConstants()
-	metricHandler := metric.NewHandler(metricRepository, metricConstants)
+	metricHandler := metric.NewHandler(metricRepository)
 
 	r := routerChi.CreateRouter()
 

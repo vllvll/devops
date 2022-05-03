@@ -3,6 +3,7 @@ package metric
 type Gauge float64
 type Counter int64
 
+type Counters map[string]Counter
 type Gauges map[string]Gauge
 
 type Metrics struct {

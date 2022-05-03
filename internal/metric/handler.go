@@ -9,14 +9,12 @@ import (
 )
 
 type Handler struct {
-	repository *Repository
-	constants  *Constants
+	repository RepositoryInterface
 }
 
-func NewHandler(repository *Repository, constants *Constants) *Handler {
+func NewHandler(repository RepositoryInterface) *Handler {
 	return &Handler{
 		repository: repository,
-		constants:  constants,
 	}
 }
 
@@ -31,10 +29,10 @@ func (h Handler) SaveMetricJSON() http.HandlerFunc {
 		}
 
 		switch metric.MType {
-		case "gauge":
+		case GaugeType:
 			h.repository.UpdateMetric(metric.MType, Gauge(*metric.Value))
 
-		case "counter":
+		case CounterType:
 			h.repository.UpdateCount(metric.MType, Counter(*metric.Delta))
 		}
 
@@ -49,7 +47,7 @@ func (h Handler) SaveMetric() http.HandlerFunc {
 		value := chi.URLParam(r, "value")
 
 		switch format {
-		case "gauge":
+		case GaugeType:
 			f, err := strconv.ParseFloat(value, 64)
 			if err != nil {
 				http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -59,7 +57,7 @@ func (h Handler) SaveMetric() http.HandlerFunc {
 
 			h.repository.UpdateMetric(key, Gauge(f))
 
-		case "counter":
+		case CounterType:
 			i, err := strconv.ParseInt(value, 10, 64)
 			if err != nil {
 				http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -110,7 +108,7 @@ func (h Handler) GetMetricJSON() http.HandlerFunc {
 		}
 
 		switch metric.MType {
-		case "gauge":
+		case GaugeType:
 			var value float64
 
 			gauge, err := h.repository.GetGaugeByKey(metric.MType)
@@ -123,7 +121,7 @@ func (h Handler) GetMetricJSON() http.HandlerFunc {
 			value = float64(gauge)
 			metric.Value = &value
 
-		case "counter":
+		case CounterType:
 			var value int64
 
 			counter, err := h.repository.GetCounterByKey(metric.MType)

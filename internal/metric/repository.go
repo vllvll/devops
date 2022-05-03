@@ -1,19 +1,26 @@
 package metric
 
-import "fmt"
-
-type gauges map[string]Gauge
-type counters map[string]Counter
+import (
+	"fmt"
+)
 
 type Repository struct {
-	Gauges   gauges
-	Counters counters
+	Gauges   Gauges
+	Counters Counters
 }
 
-func NewRepository() *Repository {
+type RepositoryInterface interface {
+	UpdateMetric(key string, value Gauge)
+	UpdateCount(key string, value Counter)
+	GetAll() (map[string]Gauge, map[string]Counter)
+	GetGaugeByKey(key string) (Gauge, error)
+	GetCounterByKey(key string) (Counter, error)
+}
+
+func NewRepository() RepositoryInterface {
 	return &Repository{
-		Gauges:   gauges{},
-		Counters: counters{},
+		Gauges:   Gauges{},
+		Counters: Counters{},
 	}
 }
 

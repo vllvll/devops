@@ -1,5 +1,8 @@
 package metric
 
+const GaugeType = "gauge"
+const CounterType = "counter"
+
 type Constants struct {
 	names []string
 }

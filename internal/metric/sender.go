@@ -30,7 +30,7 @@ func (c Sender) Send(gauges Gauges, pollCount Counter) error {
 
 		err := c.push(Metrics{
 			ID:    key,
-			MType: "gauge",
+			MType: GaugeType,
 			Value: &gaugeValue,
 		})
 
@@ -43,7 +43,7 @@ func (c Sender) Send(gauges Gauges, pollCount Counter) error {
 
 	err := c.push(Metrics{
 		ID:    "PollCount",
-		MType: "counter",
+		MType: CounterType,
 		Delta: &counterValue,
 	})
 
