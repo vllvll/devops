@@ -3,17 +3,18 @@ package metric
 import (
 	"github.com/go-resty/resty/v2"
 	jsoniter "github.com/json-iterator/go"
+	conf "github.com/vllvll/devops/internal/config"
 )
 
 type Sender struct {
 	Client *resty.Client
 }
 
-func NewClient() *Sender {
+func NewClient(config *conf.Config) *Sender {
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 
 	client := resty.New().
-		SetBaseURL("http://127.0.0.1:8080").
+		SetBaseURL(config.AddressWithHTTP()).
 		SetHeader("Content-Type", "application/json")
 
 	client.JSONMarshal = json.Marshal

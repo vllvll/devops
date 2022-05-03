@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/go-chi/chi/v5"
+	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/metric"
 	routerChi "github.com/vllvll/devops/pkg/router"
 	"log"
@@ -16,6 +17,10 @@ import (
 func main() {
 	metricRepository := metric.NewRepository()
 	metricHandler := metric.NewHandler(metricRepository)
+	config, err := conf.CreateConfig()
+	if err != nil {
+		panic("Конфиг не загружен")
+	}
 
 	r := routerChi.CreateRouter()
 
@@ -29,7 +34,7 @@ func main() {
 	r.Post("/update/", metricHandler.SaveMetricJSON())
 
 	httpServer := &http.Server{
-		Addr:    "127.0.0.1:8080",
+		Addr:    config.Address,
 		Handler: r,
 	}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/metric"
 	"log"
 	"math/rand"
@@ -13,18 +14,20 @@ import (
 	"time"
 )
 
-var pollInterval = 2
-var reportInterval = 10
-
-var pollTick = time.Tick(time.Duration(pollInterval) * time.Second)
-var reportTick = time.Tick(time.Duration(reportInterval) * time.Second)
-
 func main() {
+	config, err := conf.CreateConfig()
+	if err != nil {
+		panic("Конфиг не загружен")
+	}
+
+	var pollTick = time.Tick(config.PollInterval)
+	var reportTick = time.Tick(config.ReportInterval)
+
 	var mem runtime.MemStats
 	var pollCount metric.Counter
 	gauges := metric.Gauges{}
 
-	sender := metric.NewClient()
+	sender := metric.NewClient(config)
 	fields := metric.NewConstants()
 
 	c := make(chan os.Signal, 1)
