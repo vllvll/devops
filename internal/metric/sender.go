@@ -42,7 +42,7 @@ func (c Sender) Send(gauges Gauges, pollCount Counter) error {
 	var counterValue = int64(pollCount)
 
 	err := c.push(Metrics{
-		ID:    "PollCount",
+		ID:    CounterPollCount,
 		MType: CounterType,
 		Delta: &counterValue,
 	})

@@ -3,6 +3,9 @@ package metric
 const GaugeType = "gauge"
 const CounterType = "counter"
 
+const GaugeRandomValue = "RandomValue"
+const CounterPollCount = "PollCount"
+
 type Constants struct {
 	names []string
 }
@@ -35,8 +38,6 @@ var gaugeNames = []string{
 	"StackSys",
 	"Sys",
 	"TotalAlloc",
-	//"RandomValue",
-	//"PollCount",
 }
 
 func NewConstants() *Constants {
