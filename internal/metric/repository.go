@@ -10,7 +10,7 @@ type Repository struct {
 }
 
 type RepositoryInterface interface {
-	UpdateMetric(key string, value Gauge)
+	UpdateGauge(key string, value Gauge)
 	UpdateCount(key string, value Counter)
 	GetAll() (map[string]Gauge, map[string]Counter)
 	GetGaugeByKey(key string) (Gauge, error)
@@ -24,7 +24,7 @@ func NewRepository() RepositoryInterface {
 	}
 }
 
-func (r *Repository) UpdateMetric(key string, value Gauge) {
+func (r *Repository) UpdateGauge(key string, value Gauge) {
 	r.Gauges[key] = value
 }
 

@@ -30,10 +30,10 @@ func (h Handler) SaveMetricJSON() http.HandlerFunc {
 
 		switch metric.MType {
 		case GaugeType:
-			h.repository.UpdateMetric(metric.MType, Gauge(*metric.Value))
+			h.repository.UpdateGauge(metric.ID, Gauge(*metric.Value))
 
 		case CounterType:
-			h.repository.UpdateCount(metric.MType, Counter(*metric.Delta))
+			h.repository.UpdateCount(metric.ID, Counter(*metric.Delta))
 		}
 
 		rw.WriteHeader(http.StatusOK)
@@ -55,7 +55,7 @@ func (h Handler) SaveMetric() http.HandlerFunc {
 				return
 			}
 
-			h.repository.UpdateMetric(key, Gauge(f))
+			h.repository.UpdateGauge(key, Gauge(f))
 
 		case CounterType:
 			i, err := strconv.ParseInt(value, 10, 64)
@@ -111,7 +111,7 @@ func (h Handler) GetMetricJSON() http.HandlerFunc {
 		case GaugeType:
 			var value float64
 
-			gauge, err := h.repository.GetGaugeByKey(metric.MType)
+			gauge, err := h.repository.GetGaugeByKey(metric.ID)
 			if err != nil {
 				http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
@@ -124,7 +124,7 @@ func (h Handler) GetMetricJSON() http.HandlerFunc {
 		case CounterType:
 			var value int64
 
-			counter, err := h.repository.GetCounterByKey(metric.MType)
+			counter, err := h.repository.GetCounterByKey(metric.ID)
 			if err != nil {
 				http.Error(rw, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 

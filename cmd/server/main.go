@@ -14,13 +14,18 @@ import (
 	"time"
 )
 
+var metricRepository metric.RepositoryInterface
+
 func main() {
-	metricRepository := metric.NewRepository()
-	metricHandler := metric.NewHandler(metricRepository)
 	config, err := conf.CreateConfig()
 	if err != nil {
 		panic("Конфиг не загружен")
 	}
+
+	//metricRepository := metric.NewRepository()
+	metricHandler := metric.NewHandler(metricRepository)
+
+	var storeTick = time.Tick(config.StoreInterval)
 
 	r := routerChi.CreateRouter()
 
@@ -47,12 +52,99 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-	<-c
+	for {
+		select {
+		case <-c:
+			// graceful shutdown
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+			if err := httpServer.Shutdown(ctx); err != nil {
+				log.Println(err)
+			}
 
-	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Println(err)
+			cancel()
+
+			save()
+
+			return
+		case <-storeTick:
+			save()
+		}
+	}
+}
+
+func save() {
+	config, err := conf.CreateConfig()
+	if err != nil {
+		panic("Конфиг не загружен")
+	}
+
+	var metrics []metric.Metrics
+
+	fsProducer, err := metric.NewProducer(config.StoreFile)
+	if err != nil {
+		panic("Filesystem producer не загружен")
+	}
+
+	gauges, counters := metricRepository.GetAll()
+
+	for key, value := range gauges {
+		flValue := float64(value)
+
+		metrics = append(metrics, metric.Metrics{
+			ID:    key,
+			MType: metric.GaugeType,
+			Value: &flValue,
+		})
+	}
+
+	for key, value := range counters {
+		iValue := int64(value)
+
+		metrics = append(metrics, metric.Metrics{
+			ID:    key,
+			MType: metric.CounterType,
+			Delta: &iValue,
+		})
+	}
+
+	for _, m := range metrics {
+		err := fsProducer.WriteMetric(&m)
+		if err != nil {
+			panic("can't write metric")
+		}
+	}
+
+	fsProducer.Close()
+}
+
+func init() {
+	config, err := conf.CreateConfig()
+	if err != nil {
+		panic("Конфиг не загружен")
+	}
+
+	metricRepository = metric.NewRepository()
+	if config.Restore {
+		fsConsumer, err := metric.NewConsumer(config.StoreFile)
+		if err != nil {
+			panic("Filesystem consumer не загружен")
+		}
+		defer fsConsumer.Close()
+
+		for {
+			readMetric, err := fsConsumer.ReadMetric()
+			if err != nil {
+				return
+			}
+
+			switch readMetric.MType {
+			case metric.GaugeType:
+				metricRepository.UpdateGauge(readMetric.ID, metric.Gauge(*readMetric.Value))
+
+			case metric.CounterType:
+				metricRepository.UpdateCount(readMetric.ID, metric.Counter(*readMetric.Delta))
+			}
+		}
 	}
 }
