@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	config, err := conf.CreateConfig()
+	config, err := conf.CreateAgentConfig()
 	if err != nil {
 		panic("Конфиг не загружен")
 	}

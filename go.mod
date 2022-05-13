@@ -7,6 +7,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/json-iterator/go v1.1.12
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.1
 )
 

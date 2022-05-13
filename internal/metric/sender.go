@@ -10,11 +10,11 @@ type Sender struct {
 	Client *resty.Client
 }
 
-func NewClient(config *conf.Config) *Sender {
+func NewClient(AgentConfig *conf.AgentConfig) *Sender {
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 
 	client := resty.New().
-		SetBaseURL(config.AddressWithHTTP()).
+		SetBaseURL(AgentConfig.AddressWithHTTP()).
 		SetHeader("Content-Type", "application/json")
 
 	client.JSONMarshal = json.Marshal

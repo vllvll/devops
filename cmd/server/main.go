@@ -14,16 +14,16 @@ import (
 	"time"
 )
 
-var metricRepository metric.RepositoryInterface
-
 func main() {
-	config, err := conf.CreateConfig()
+	config, err := conf.CreateServerConfig()
 	if err != nil {
 		panic("Конфиг не загружен")
 	}
 
-	//metricRepository := metric.NewRepository()
+	metricRepository := metric.NewRepository()
 	metricHandler := metric.NewHandler(metricRepository)
+
+	start(config, metricRepository)
 
 	var storeTick = time.Tick(config.StoreInterval)
 
@@ -64,21 +64,16 @@ func main() {
 
 			cancel()
 
-			save()
+			save(config, metricRepository)
 
 			return
 		case <-storeTick:
-			save()
+			save(config, metricRepository)
 		}
 	}
 }
 
-func save() {
-	config, err := conf.CreateConfig()
-	if err != nil {
-		panic("Конфиг не загружен")
-	}
-
+func save(config *conf.ServerConfig, repository metric.RepositoryInterface) {
 	var metrics []metric.Metrics
 
 	fsProducer, err := metric.NewProducer(config.StoreFile)
@@ -86,7 +81,7 @@ func save() {
 		panic("Filesystem producer не загружен")
 	}
 
-	gauges, counters := metricRepository.GetAll()
+	gauges, counters := repository.GetAll()
 
 	for key, value := range gauges {
 		flValue := float64(value)
@@ -118,13 +113,7 @@ func save() {
 	fsProducer.Close()
 }
 
-func init() {
-	config, err := conf.CreateConfig()
-	if err != nil {
-		panic("Конфиг не загружен")
-	}
-
-	metricRepository = metric.NewRepository()
+func start(config *conf.ServerConfig, metricRepository metric.RepositoryInterface) {
 	if config.Restore {
 		fsConsumer, err := metric.NewConsumer(config.StoreFile)
 		if err != nil {
