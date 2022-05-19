@@ -1,18 +1,21 @@
-package metric
+package handlers
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/vllvll/devops/internal/dictionaries"
+	"github.com/vllvll/devops/internal/repositories"
+	"github.com/vllvll/devops/internal/types"
 	"net/http"
 	"strconv"
 )
 
 type Handler struct {
-	repository RepositoryInterface
+	repository repositories.StatsRepository
 }
 
-func NewHandler(repository RepositoryInterface) *Handler {
+func NewHandler(repository repositories.StatsRepository) *Handler {
 	return &Handler{
 		repository: repository,
 	}
@@ -20,7 +23,7 @@ func NewHandler(repository RepositoryInterface) *Handler {
 
 func (h Handler) SaveMetricJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		var metric Metrics
+		var metric types.Metrics
 
 		if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -29,11 +32,11 @@ func (h Handler) SaveMetricJSON() http.HandlerFunc {
 		}
 
 		switch metric.MType {
-		case GaugeType:
-			h.repository.UpdateGauge(metric.ID, Gauge(*metric.Value))
+		case dictionaries.GaugeType:
+			h.repository.UpdateGauge(metric.ID, types.Gauge(*metric.Value))
 
-		case CounterType:
-			h.repository.UpdateCount(metric.ID, Counter(*metric.Delta))
+		case dictionaries.CounterType:
+			h.repository.UpdateCount(metric.ID, types.Counter(*metric.Delta))
 		}
 
 		rw.WriteHeader(http.StatusOK)
@@ -47,7 +50,7 @@ func (h Handler) SaveMetric() http.HandlerFunc {
 		value := chi.URLParam(r, "value")
 
 		switch format {
-		case GaugeType:
+		case dictionaries.GaugeType:
 			f, err := strconv.ParseFloat(value, 64)
 			if err != nil {
 				http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -55,9 +58,9 @@ func (h Handler) SaveMetric() http.HandlerFunc {
 				return
 			}
 
-			h.repository.UpdateGauge(key, Gauge(f))
+			h.repository.UpdateGauge(key, types.Gauge(f))
 
-		case CounterType:
+		case dictionaries.CounterType:
 			i, err := strconv.ParseInt(value, 10, 64)
 			if err != nil {
 				http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -65,7 +68,7 @@ func (h Handler) SaveMetric() http.HandlerFunc {
 				return
 			}
 
-			h.repository.UpdateCount(key, Counter(i))
+			h.repository.UpdateCount(key, types.Counter(i))
 
 		default:
 			http.Error(rw, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
@@ -99,7 +102,7 @@ func (h Handler) GetAll() http.HandlerFunc {
 
 func (h Handler) GetMetricJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		var metric Metrics
+		var metric types.Metrics
 
 		if err := json.NewDecoder(r.Body).Decode(&metric); err != nil {
 			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -108,7 +111,7 @@ func (h Handler) GetMetricJSON() http.HandlerFunc {
 		}
 
 		switch metric.MType {
-		case GaugeType:
+		case dictionaries.GaugeType:
 			var value float64
 
 			gauge, err := h.repository.GetGaugeByKey(metric.ID)
@@ -121,7 +124,7 @@ func (h Handler) GetMetricJSON() http.HandlerFunc {
 			value = float64(gauge)
 			metric.Value = &value
 
-		case CounterType:
+		case dictionaries.CounterType:
 			var value int64
 
 			counter, err := h.repository.GetCounterByKey(metric.ID)

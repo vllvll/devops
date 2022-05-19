@@ -1,4 +1,4 @@
-package metric
+package dictionaries
 
 const GaugeType = "gauge"
 const CounterType = "counter"
@@ -8,6 +8,10 @@ const CounterPollCount = "PollCount"
 
 type Constants struct {
 	names []string
+}
+
+type DictionaryInterface interface {
+	In(str string) bool
 }
 
 var gaugeNames = []string{
@@ -40,7 +44,7 @@ var gaugeNames = []string{
 	"TotalAlloc",
 }
 
-func NewConstants() *Constants {
+func NewMemConstants() DictionaryInterface {
 	return &Constants{
 		names: gaugeNames,
 	}

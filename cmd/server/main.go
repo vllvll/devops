@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
+	"fmt"
 	conf "github.com/vllvll/devops/internal/config"
-	"github.com/vllvll/devops/internal/metric"
-	routerChi "github.com/vllvll/devops/pkg/router"
+	"github.com/vllvll/devops/internal/handlers"
+	"github.com/vllvll/devops/internal/repositories"
+	routerChi "github.com/vllvll/devops/internal/services"
+	"github.com/vllvll/devops/internal/storage"
+	"github.com/vllvll/devops/internal/storage/file"
 	"log"
 	"net/http"
 	"os"
@@ -20,27 +23,34 @@ func main() {
 		panic("Конфиг не загружен")
 	}
 
-	metricRepository := metric.NewRepository()
-	metricHandler := metric.NewHandler(metricRepository)
-
-	start(config, metricRepository)
-
 	var storeTick = time.Tick(config.StoreInterval)
 
-	r := routerChi.CreateRouter()
+	statsRepository := repositories.NewStatsRepository()
+	handler := handlers.NewHandler(statsRepository)
+	router := routerChi.NewRouter(*handler)
+	router.RegisterHandlers()
 
-	r.Get("/", metricHandler.GetAll())
-	r.Route("/value/", func(r chi.Router) {
-		r.Post("/", metricHandler.GetMetricJSON())
-		r.Get("/gauge/{key:[A-Za-z0-9]+}", metricHandler.GetGauge())
-		r.Get("/counter/{key:[A-Za-z0-9]+}", metricHandler.GetCounter())
-	})
-	r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", metricHandler.SaveMetric())
-	r.Post("/update/", metricHandler.SaveMetricJSON())
+	consumer, err := file.NewFileConsumer(config.StoreFile)
+	if err != nil {
+		panic("Консьюмер не загружен")
+	}
+
+	producer, err := file.NewFileProducer(config.StoreFile)
+	if err != nil {
+		panic("Продюсер не загружен")
+	}
+
+	fileStorage := storage.NewStatsStorage(config, consumer, producer)
+	defer fileStorage.Save(statsRepository)
+
+	statsRepository, err = fileStorage.Start(statsRepository)
+	if err != nil {
+		panic("Загрузка из файла произошла с ошибкой")
+	}
 
 	httpServer := &http.Server{
 		Addr:    config.Address,
-		Handler: r,
+		Handler: router.Router,
 	}
 
 	go func() {
@@ -55,7 +65,8 @@ func main() {
 	for {
 		select {
 		case <-c:
-			// graceful shutdown
+			fmt.Println("Graceful shutdown")
+
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 			if err := httpServer.Shutdown(ctx); err != nil {
@@ -64,76 +75,11 @@ func main() {
 
 			cancel()
 
-			save(config, metricRepository)
+			fileStorage.Save(statsRepository)
 
 			return
 		case <-storeTick:
-			save(config, metricRepository)
-		}
-	}
-}
-
-func save(config *conf.ServerConfig, repository metric.RepositoryInterface) {
-	var metrics []metric.Metrics
-
-	fsProducer, err := metric.NewProducer(config.StoreFile)
-	if err != nil {
-		panic("Filesystem producer не загружен")
-	}
-
-	gauges, counters := repository.GetAll()
-
-	for key, value := range gauges {
-		flValue := float64(value)
-
-		metrics = append(metrics, metric.Metrics{
-			ID:    key,
-			MType: metric.GaugeType,
-			Value: &flValue,
-		})
-	}
-
-	for key, value := range counters {
-		iValue := int64(value)
-
-		metrics = append(metrics, metric.Metrics{
-			ID:    key,
-			MType: metric.CounterType,
-			Delta: &iValue,
-		})
-	}
-
-	for _, m := range metrics {
-		err := fsProducer.WriteMetric(&m)
-		if err != nil {
-			panic("can't write metric")
-		}
-	}
-
-	fsProducer.Close()
-}
-
-func start(config *conf.ServerConfig, metricRepository metric.RepositoryInterface) {
-	if config.Restore {
-		fsConsumer, err := metric.NewConsumer(config.StoreFile)
-		if err != nil {
-			panic("Filesystem consumer не загружен")
-		}
-		defer fsConsumer.Close()
-
-		for {
-			readMetric, err := fsConsumer.ReadMetric()
-			if err != nil {
-				return
-			}
-
-			switch readMetric.MType {
-			case metric.GaugeType:
-				metricRepository.UpdateGauge(readMetric.ID, metric.Gauge(*readMetric.Value))
-
-			case metric.CounterType:
-				metricRepository.UpdateCount(readMetric.ID, metric.Counter(*readMetric.Delta))
-			}
+			fileStorage.Save(statsRepository)
 		}
 	}
 }

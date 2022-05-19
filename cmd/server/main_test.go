@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/vllvll/devops/internal/metric"
-	routerChi "github.com/vllvll/devops/pkg/router"
+	"github.com/vllvll/devops/internal/handlers"
+	"github.com/vllvll/devops/internal/repositories"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -85,10 +86,10 @@ func TestSaveMetricHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repository := metric.NewRepository()
-			handler := metric.NewHandler(repository)
+			repository := repositories.NewStatsRepository()
+			handler := handlers.NewHandler(repository)
 
-			r := routerChi.CreateRouter()
+			r := chi.NewRouter()
 			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())
 
 			ts := httptest.NewServer(r)
