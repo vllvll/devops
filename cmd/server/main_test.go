@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/vllvll/devops/internal/handlers"
 	"github.com/vllvll/devops/internal/repositories"
+	"github.com/vllvll/devops/internal/services"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -87,7 +88,8 @@ func TestSaveMetricHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repository := repositories.NewStatsRepository()
-			handler := handlers.NewHandler(repository)
+			signer := services.NewMetricSigner("")
+			handler := handlers.NewHandler(repository, signer)
 
 			r := chi.NewRouter()
 			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())

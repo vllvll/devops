@@ -1,4 +1,4 @@
-package services
+package routes
 
 import (
 	"github.com/go-chi/chi/v5"

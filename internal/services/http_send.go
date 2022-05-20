@@ -10,9 +10,10 @@ import (
 
 type Sender struct {
 	Client *resty.Client
+	signer Signer
 }
 
-func NewSendClient(AgentConfig *conf.AgentConfig) *Sender {
+func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer) *Sender {
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 
 	client := resty.New().
@@ -24,6 +25,7 @@ func NewSendClient(AgentConfig *conf.AgentConfig) *Sender {
 
 	return &Sender{
 		Client: client,
+		signer: signer,
 	}
 }
 
@@ -35,6 +37,7 @@ func (c Sender) Send(gauges types.Gauges, pollCount types.Counter) error {
 			ID:    key,
 			MType: dictionaries.GaugeType,
 			Value: &gaugeValue,
+			Hash:  c.signer.GetHashGauge(key, gaugeValue),
 		})
 
 		if err != nil {
@@ -48,6 +51,7 @@ func (c Sender) Send(gauges types.Gauges, pollCount types.Counter) error {
 		ID:    dictionaries.CounterPollCount,
 		MType: dictionaries.CounterType,
 		Delta: &counterValue,
+		Hash:  c.signer.GetHashCounter(dictionaries.CounterPollCount, counterValue),
 	})
 
 	if err != nil {
