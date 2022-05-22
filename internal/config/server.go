@@ -11,6 +11,7 @@ type ServerConfig struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
 }
 
 func CreateServerConfig() (*ServerConfig, error) {
@@ -20,6 +21,7 @@ func CreateServerConfig() (*ServerConfig, error) {
 	flag.DurationVarP(&cfg.StoreInterval, "store", "i", 300*time.Second, "Store interval. Format: any input valid for time.ParseDuration (for example: 1s)")
 	flag.StringVarP(&cfg.StoreFile, "file", "f", "/tmp/devops-metrics-db.json", "Store file. Format: local path (for example: /tmp/devops-metrics-db.json)")
 	flag.BoolVarP(&cfg.Restore, "restore", "r", true, "Restore. Format: bool (for example: true")
+	flag.StringVarP(&cfg.Key, "key", "k", "", "Key. Format: string (for example: ?)")
 
 	flag.Parse()
 

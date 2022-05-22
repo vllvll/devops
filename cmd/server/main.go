@@ -6,7 +6,8 @@ import (
 	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/handlers"
 	"github.com/vllvll/devops/internal/repositories"
-	routerChi "github.com/vllvll/devops/internal/services"
+	"github.com/vllvll/devops/internal/routes"
+	"github.com/vllvll/devops/internal/services"
 	"github.com/vllvll/devops/internal/storage"
 	"github.com/vllvll/devops/internal/storage/file"
 	"log"
@@ -26,8 +27,9 @@ func main() {
 	var storeTick = time.Tick(config.StoreInterval)
 
 	statsRepository := repositories.NewStatsRepository()
-	handler := handlers.NewHandler(statsRepository)
-	router := routerChi.NewRouter(*handler)
+	signer := services.NewMetricSigner(config.Key)
+	handler := handlers.NewHandler(statsRepository, signer)
+	router := routes.NewRouter(*handler)
 	router.RegisterHandlers()
 
 	consumer, err := file.NewFileConsumer(config.StoreFile)

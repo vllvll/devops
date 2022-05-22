@@ -26,7 +26,8 @@ func main() {
 	var pollCount types.Counter
 	var gauges = types.Gauges{}
 
-	sender := services.NewSendClient(config)
+	signer := services.NewMetricSigner(config.Key)
+	sender := services.NewSendClient(config, signer)
 	constants := dictionaries.NewMemConstants()
 	memRepository := repositories.NewMemRepository(constants)
 

@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/repositories"
+	"github.com/vllvll/devops/internal/services"
 	"github.com/vllvll/devops/internal/types"
 	"net/http"
 	"strconv"
@@ -13,11 +14,22 @@ import (
 
 type Handler struct {
 	repository repositories.StatsRepository
+	signer     services.Signer
 }
 
-func NewHandler(repository repositories.StatsRepository) *Handler {
+type MetricHandlers interface {
+	SaveMetricJSON() http.HandlerFunc
+	SaveMetric() http.HandlerFunc
+	GetAll() http.HandlerFunc
+	GetMetricJSON() http.HandlerFunc
+	GetGauge() http.HandlerFunc
+	GetCounter() http.HandlerFunc
+}
+
+func NewHandler(repository repositories.StatsRepository, signer services.Signer) *Handler {
 	return &Handler{
 		repository: repository,
+		signer:     signer,
 	}
 }
 
@@ -33,9 +45,21 @@ func (h Handler) SaveMetricJSON() http.HandlerFunc {
 
 		switch metric.MType {
 		case dictionaries.GaugeType:
+			if !h.signer.IsEqualHashGauge(metric.ID, *metric.Value, metric.Hash) {
+				http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+
+				return
+			}
+
 			h.repository.UpdateGauge(metric.ID, types.Gauge(*metric.Value))
 
 		case dictionaries.CounterType:
+			if !h.signer.IsEqualHashCounter(metric.ID, *metric.Delta, metric.Hash) {
+				http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+
+				return
+			}
+
 			h.repository.UpdateCount(metric.ID, types.Counter(*metric.Delta))
 		}
 
@@ -123,6 +147,7 @@ func (h Handler) GetMetricJSON() http.HandlerFunc {
 
 			value = float64(gauge)
 			metric.Value = &value
+			metric.Hash = h.signer.GetHashGauge(metric.ID, value)
 
 		case dictionaries.CounterType:
 			var value int64
@@ -136,6 +161,7 @@ func (h Handler) GetMetricJSON() http.HandlerFunc {
 
 			value = int64(counter)
 			metric.Delta = &value
+			metric.Hash = h.signer.GetHashCounter(metric.ID, value)
 		}
 
 		response, err := json.Marshal(metric)
