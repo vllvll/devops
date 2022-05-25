@@ -89,7 +89,7 @@ func TestSaveMetricHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repository := repositories.NewStatsRepository()
 			signer := services.NewMetricSigner("")
-			handler := handlers.NewHandler(repository, signer)
+			handler := handlers.NewHandler(repository, signer, nil)
 
 			r := chi.NewRouter()
 			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())
