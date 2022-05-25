@@ -10,6 +10,7 @@ import (
 	"github.com/vllvll/devops/internal/services"
 	"github.com/vllvll/devops/internal/storage"
 	"github.com/vllvll/devops/internal/storage/file"
+	"github.com/vllvll/devops/pkg/postgres"
 	"log"
 	"net/http"
 	"os"
@@ -24,11 +25,17 @@ func main() {
 		panic("Конфиг не загружен")
 	}
 
+	db, err := postgres.ConnectDatabase(config.DatabaseDsn)
+	if err != nil {
+		panic("Подключение к базе данных не доступно")
+	}
+	defer db.Close()
+
 	var storeTick = time.Tick(config.StoreInterval)
 
 	statsRepository := repositories.NewStatsRepository()
 	signer := services.NewMetricSigner(config.Key)
-	handler := handlers.NewHandler(statsRepository, signer)
+	handler := handlers.NewHandler(statsRepository, signer, db)
 	router := routes.NewRouter(*handler)
 	router.RegisterHandlers()
 

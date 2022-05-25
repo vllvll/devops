@@ -12,6 +12,7 @@ type ServerConfig struct {
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
+	DatabaseDsn   string        `env:"DATABASE_DSN"`
 }
 
 func CreateServerConfig() (*ServerConfig, error) {
@@ -22,6 +23,7 @@ func CreateServerConfig() (*ServerConfig, error) {
 	flag.StringVarP(&cfg.StoreFile, "file", "f", "/tmp/devops-metrics-db.json", "Store file. Format: local path (for example: /tmp/devops-metrics-db.json)")
 	flag.BoolVarP(&cfg.Restore, "restore", "r", true, "Restore. Format: bool (for example: true")
 	flag.StringVarP(&cfg.Key, "key", "k", "", "Key. Format: string (for example: ?)")
+	flag.StringVarP(&cfg.DatabaseDsn, "database-dsn", "d", "", "Database dsn. Format: string (for example: postgres://username:password@localhost:5432/database_name)")
 
 	flag.Parse()
 

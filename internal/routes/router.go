@@ -28,6 +28,7 @@ func NewRouter(handlers handlers.Handler) Router {
 
 func (ro *Router) RegisterHandlers() {
 	ro.Router.Get("/", ro.handlers.GetAll())
+	ro.Router.Get("/ping", ro.handlers.Ping())
 	ro.Router.Route("/value/", func(r chi.Router) {
 		r.Post("/", ro.handlers.GetMetricJSON())
 		r.Get("/gauge/{key:[A-Za-z0-9]+}", ro.handlers.GetGauge())

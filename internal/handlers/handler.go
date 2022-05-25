@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -15,6 +16,7 @@ import (
 type Handler struct {
 	repository repositories.StatsRepository
 	signer     services.Signer
+	db         *sql.DB
 }
 
 type MetricHandlers interface {
@@ -24,12 +26,14 @@ type MetricHandlers interface {
 	GetMetricJSON() http.HandlerFunc
 	GetGauge() http.HandlerFunc
 	GetCounter() http.HandlerFunc
+	Ping() http.HandlerFunc
 }
 
-func NewHandler(repository repositories.StatsRepository, signer services.Signer) *Handler {
+func NewHandler(repository repositories.StatsRepository, signer services.Signer, db *sql.DB) *Handler {
 	return &Handler{
 		repository: repository,
 		signer:     signer,
+		db:         db,
 	}
 }
 
@@ -216,5 +220,19 @@ func (h Handler) GetCounter() http.HandlerFunc {
 
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(strconv.FormatInt(int64(value), 10)))
+	}
+}
+
+func (h Handler) Ping() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		err := h.db.Ping()
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+
+			return
+		}
+
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(http.StatusText(http.StatusOK)))
 	}
 }
