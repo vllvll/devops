@@ -53,6 +53,8 @@ func (s *statsStorage) Save(statsRepository repositories.StatsRepository) {
 			panic("can't write handlers")
 		}
 	}
+
+	s.producer.Close()
 }
 
 func (s *statsStorage) Start(statsRepository repositories.StatsRepository) (repositories.StatsRepository, error) {

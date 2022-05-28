@@ -22,12 +22,12 @@ import (
 func main() {
 	config, err := conf.CreateServerConfig()
 	if err != nil {
-		panic(err)
+		panic("Конфиг не загружен")
 	}
 
 	db, err := postgres.ConnectDatabase(config.DatabaseDsn)
 	if err != nil {
-		panic(err)
+		panic("Подключение к базе данных не доступно")
 	}
 	defer db.Close()
 
@@ -43,13 +43,11 @@ func main() {
 	if err != nil {
 		panic("Консьюмер не загружен")
 	}
-	defer consumer.Close()
 
 	producer, err := file.NewFileProducer(config.StoreFile)
 	if err != nil {
 		panic("Продюсер не загружен")
 	}
-	defer producer.Close()
 
 	fileStorage := storage.NewStatsStorage(config, consumer, producer)
 	defer fileStorage.Save(statsRepository)
