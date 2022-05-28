@@ -23,42 +23,44 @@ func NewStatsStorage(serverConfig *conf.ServerConfig, consumer file.ConsumerFile
 }
 
 func (s *statsStorage) Save(statsRepository repositories.StatsRepository) {
-	var metrics []types.Metrics
+	if s.config.DatabaseDsn == "" {
+		var metrics []types.Metrics
 
-	gauges, counters := statsRepository.GetAll()
+		gauges, counters := statsRepository.GetAll()
 
-	for key, value := range gauges {
-		flValue := float64(value)
+		for key, value := range gauges {
+			flValue := float64(value)
 
-		metrics = append(metrics, types.Metrics{
-			ID:    key,
-			MType: dictionaries.GaugeType,
-			Value: &flValue,
-		})
-	}
-
-	for key, value := range counters {
-		iValue := int64(value)
-
-		metrics = append(metrics, types.Metrics{
-			ID:    key,
-			MType: dictionaries.CounterType,
-			Delta: &iValue,
-		})
-	}
-
-	for _, m := range metrics {
-		err := s.producer.WriteMetric(&m)
-		if err != nil {
-			panic("can't write handlers")
+			metrics = append(metrics, types.Metrics{
+				ID:    key,
+				MType: dictionaries.GaugeType,
+				Value: &flValue,
+			})
 		}
-	}
 
-	s.producer.Close()
+		for key, value := range counters {
+			iValue := int64(value)
+
+			metrics = append(metrics, types.Metrics{
+				ID:    key,
+				MType: dictionaries.CounterType,
+				Delta: &iValue,
+			})
+		}
+
+		for _, m := range metrics {
+			err := s.producer.WriteMetric(&m)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		s.producer.Close()
+	}
 }
 
 func (s *statsStorage) Start(statsRepository repositories.StatsRepository) (repositories.StatsRepository, error) {
-	if s.config.Restore {
+	if s.config.DatabaseDsn == "" && s.config.Restore {
 		for {
 			readMetric, err := s.consumer.ReadMetric()
 			if err != nil {

@@ -6,6 +6,7 @@ require (
 	github.com/caarlos0/env/v6 v6.9.1
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-resty/resty/v2 v2.7.0
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/json-iterator/go v1.1.12
 	github.com/spf13/pflag v1.0.5
