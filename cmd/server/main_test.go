@@ -87,7 +87,7 @@ func TestSaveMetricHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repository := repositories.NewStatsRepository()
+			repository := repositories.NewStatsMemoryRepository()
 			signer := services.NewMetricSigner("")
 			handler := handlers.NewHandler(repository, signer, nil)
 

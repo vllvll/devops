@@ -5,7 +5,7 @@ import (
 	"github.com/vllvll/devops/internal/types"
 )
 
-type Stats struct {
+type StatsMemory struct {
 	Gauges   types.Gauges
 	Counters types.Counters
 }
@@ -18,35 +18,35 @@ type StatsRepository interface {
 	GetCounterByKey(key string) (types.Counter, error)
 }
 
-func NewStatsRepository() StatsRepository {
-	return &Stats{
+func NewStatsMemoryRepository() StatsRepository {
+	return &StatsMemory{
 		Gauges:   types.Gauges{},
 		Counters: types.Counters{},
 	}
 }
 
-func (r *Stats) UpdateGauge(key string, value types.Gauge) {
-	r.Gauges[key] = value
+func (s *StatsMemory) UpdateGauge(key string, value types.Gauge) {
+	s.Gauges[key] = value
 }
 
-func (r *Stats) UpdateCount(key string, value types.Counter) {
-	r.Counters[key] += value
+func (s *StatsMemory) UpdateCount(key string, value types.Counter) {
+	s.Counters[key] += value
 }
 
-func (r *Stats) GetAll() (map[string]types.Gauge, map[string]types.Counter) {
-	return r.Gauges, r.Counters
+func (s *StatsMemory) GetAll() (map[string]types.Gauge, map[string]types.Counter) {
+	return s.Gauges, s.Counters
 }
 
-func (r *Stats) GetGaugeByKey(key string) (types.Gauge, error) {
-	if value, ok := r.Gauges[key]; ok {
+func (s *StatsMemory) GetGaugeByKey(key string) (types.Gauge, error) {
+	if value, ok := s.Gauges[key]; ok {
 		return value, nil
 	}
 
 	return types.Gauge(0), fmt.Errorf("%s key doesn't exists", key)
 }
 
-func (r *Stats) GetCounterByKey(key string) (types.Counter, error) {
-	if value, ok := r.Counters[key]; ok {
+func (s *StatsMemory) GetCounterByKey(key string) (types.Counter, error) {
+	if value, ok := s.Counters[key]; ok {
 		return value, nil
 	}
 

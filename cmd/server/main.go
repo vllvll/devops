@@ -33,7 +33,11 @@ func main() {
 
 	var storeTick = time.Tick(config.StoreInterval)
 
-	statsRepository := repositories.NewStatsRepository()
+	statsRepository := repositories.NewStatsDatabaseRepository(db)
+	if config.DatabaseDsn == "" {
+		statsRepository = repositories.NewStatsMemoryRepository()
+	}
+
 	signer := services.NewMetricSigner(config.Key)
 	handler := handlers.NewHandler(statsRepository, signer, db)
 	router := routes.NewRouter(*handler)
@@ -48,8 +52,10 @@ func main() {
 	if err != nil {
 		panic("Продюсер не загружен")
 	}
+	defer producer.Close()
 
 	fileStorage := storage.NewStatsStorage(config, consumer, producer)
+
 	defer fileStorage.Save(statsRepository)
 
 	statsRepository, err = fileStorage.Start(statsRepository)
