@@ -55,7 +55,7 @@ func (s *statsStorage) Save(statsRepository repositories.StatsRepository) {
 			}
 		}
 
-		s.producer.Close()
+		// s.producer.Close()
 	}
 }
 
