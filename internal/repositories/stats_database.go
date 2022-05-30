@@ -28,16 +28,16 @@ func (s *StatsDatabase) UpdateGauge(key string, value types.Gauge) {
 		value,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error with update gauge result: %v", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error with affected gauge rows: %v", err)
 	}
 
 	if rows != 1 {
-		log.Fatalf("expected single row affected, got %d rows affected", rows)
+		log.Fatalf("Error with expected single row affected, got %d rows affected", rows)
 	}
 }
 
@@ -51,16 +51,16 @@ func (s *StatsDatabase) UpdateCount(key string, value types.Counter) {
 		value,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error with update counter result: %v", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error with affected counter rows: %v", err)
 	}
 
 	if rows != 1 {
-		log.Fatalf("expected single row affected, got %d rows affected", rows)
+		log.Fatalf("Error with expected single row affected, got %d rows affected", rows)
 	}
 }
 
@@ -70,14 +70,14 @@ func (s *StatsDatabase) GetAll() (map[string]types.Gauge, map[string]types.Count
 	row := s.db.QueryRow("SELECT COUNT(*) as count FROM gauges")
 	err := row.Scan(&gaugeCount)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error with get gauge count: %v", err)
 	}
 
 	gauges := make(map[string]types.Gauge, gaugeCount)
 
 	rows, err := s.db.Query("SELECT name, value FROM gauges")
 	if err != nil || rows.Err() != nil {
-		panic(err)
+		log.Fatalf("Error with get gauge name and value: %v", err)
 	}
 	defer rows.Close()
 
@@ -87,7 +87,7 @@ func (s *StatsDatabase) GetAll() (map[string]types.Gauge, map[string]types.Count
 
 		err = rows.Scan(&name, &value)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Error with scan gauge: %v", err)
 		}
 
 		gauges[name] = value
@@ -96,14 +96,14 @@ func (s *StatsDatabase) GetAll() (map[string]types.Gauge, map[string]types.Count
 	row = s.db.QueryRow("SELECT COUNT(*) as count FROM counters")
 	err = row.Scan(&counterCount)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error with get counter count: %v", err)
 	}
 
 	counters := make(map[string]types.Counter, counterCount)
 
 	rows, err = s.db.Query("SELECT name, value FROM counters")
 	if err != nil || rows.Err() != nil {
-		panic(err)
+		log.Fatalf("Error with get counter name and value: %v", err)
 	}
 	defer rows.Close()
 
@@ -113,7 +113,7 @@ func (s *StatsDatabase) GetAll() (map[string]types.Gauge, map[string]types.Count
 
 		err = rows.Scan(&name, &value)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Error with scan counter: %v", err)
 		}
 
 		counters[name] = value
@@ -149,11 +149,15 @@ func (s *StatsDatabase) GetCounterByKey(key string) (types.Counter, error) {
 func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) error {
 	tx, err := s.db.Begin()
 	if err != nil {
+		log.Printf("Error with open transaction: %v\n", err)
+
 		return err
 	}
 
 	stmtGauges, err := tx.Prepare("INSERT INTO gauges (id, name, value) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET value = excluded.value")
 	if err != nil {
+		log.Printf("Error with create prepared statement for gauge: %v\n", err)
+
 		return err
 	}
 
@@ -167,7 +171,7 @@ func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) 
 
 		if _, err = stmtGauges.Exec(id.String(), key, value); err != nil {
 			if err = tx.Rollback(); err != nil {
-				log.Fatalf("Unable to rollback: %v", err)
+				log.Fatalf("Error with unable to rollback: %v", err)
 			}
 
 			return err
@@ -179,7 +183,7 @@ func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) 
 
 		if _, err = stmtCounters.Exec(id.String(), key, value); err != nil {
 			if err = tx.Rollback(); err != nil {
-				log.Fatalf("Unable to rollback: %v", err)
+				log.Fatalf("Error with unable to rollback: %v", err)
 			}
 
 			return err
@@ -187,7 +191,7 @@ func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) 
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("Unable to commit: %v", err)
+		log.Fatalf("Erro with unable to commit: %v", err)
 	}
 
 	return nil

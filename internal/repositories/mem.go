@@ -3,6 +3,7 @@ package repositories
 import (
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/types"
+	"log"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -43,7 +44,7 @@ func (m *Mem) GetGauges() types.Gauges {
 			case reflect.Float64:
 				memValue = types.Gauge(memReflect.Field(i).Interface().(float64))
 			default:
-				panic("Это ключ не имеет обработанного типа")
+				log.Fatalf("Error with get mem by key: %s", memReflect.Field(i).Kind())
 			}
 
 			m.gauges[memName] = memValue

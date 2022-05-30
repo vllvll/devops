@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/handlers"
 	"github.com/vllvll/devops/internal/repositories"
@@ -22,12 +21,12 @@ import (
 func main() {
 	config, err := conf.CreateServerConfig()
 	if err != nil {
-		panic("Конфиг не загружен")
+		log.Fatalf("Error with config: %v", err)
 	}
 
 	db, err := postgres.ConnectDatabase(config.DatabaseDsn)
 	if err != nil {
-		panic("Подключение к базе данных не доступно")
+		log.Fatalf("Error with database: %v", err)
 	}
 	defer db.Close()
 
@@ -45,12 +44,12 @@ func main() {
 
 	consumer, err := file.NewFileConsumer(config.StoreFile)
 	if err != nil {
-		panic("Консьюмер не загружен")
+		log.Fatalf("Error with file consumer: %v", err)
 	}
 
 	producer, err := file.NewFileProducer(config.StoreFile)
 	if err != nil {
-		panic("Продюсер не загружен")
+		log.Fatalf("Error with file producer: %v", err)
 	}
 	defer producer.Close()
 
@@ -60,7 +59,7 @@ func main() {
 
 	statsRepository, err = fileStorage.Start(statsRepository)
 	if err != nil {
-		panic("Загрузка из файла произошла с ошибкой")
+		log.Fatalf("Error with file file storage: %v", err)
 	}
 
 	httpServer := &http.Server{
@@ -70,7 +69,7 @@ func main() {
 
 	go func() {
 		if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatalf("HTTP server ListenAndServe: %v", err)
+			log.Fatalf("Error with HTTP server ListenAndServe: %v", err)
 		}
 	}()
 
@@ -80,7 +79,7 @@ func main() {
 	for {
 		select {
 		case <-c:
-			fmt.Println("Graceful shutdown")
+			log.Println("Graceful shutdown")
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 

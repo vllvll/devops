@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/repositories"
@@ -17,7 +16,7 @@ import (
 func main() {
 	config, err := conf.CreateAgentConfig()
 	if err != nil {
-		panic("Конфиг не загружен")
+		log.Fatalf("Error with config: %v", err)
 	}
 
 	var pollTick = time.Tick(config.PollInterval)
@@ -37,7 +36,7 @@ func main() {
 	for {
 		select {
 		case <-c:
-			fmt.Println("Graceful shutdown")
+			log.Println("Graceful shutdown")
 
 			return
 		case <-pollTick:
@@ -48,7 +47,7 @@ func main() {
 		case <-reportTick:
 			err := sender.Send(gauges, pollCount)
 			if err != nil {
-				log.Printf("can't send report: %v\n", err)
+				log.Printf("Error with send report: %v\n", err)
 			}
 
 			pollCount = 0
