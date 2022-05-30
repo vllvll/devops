@@ -16,6 +16,7 @@ type StatsRepository interface {
 	GetAll() (map[string]types.Gauge, map[string]types.Counter)
 	GetGaugeByKey(key string) (types.Gauge, error)
 	GetCounterByKey(key string) (types.Counter, error)
+	UpdateAll(gauges types.Gauges, counters types.Counters) error
 }
 
 func NewStatsMemoryRepository() StatsRepository {
@@ -51,4 +52,16 @@ func (s *StatsMemory) GetCounterByKey(key string) (types.Counter, error) {
 	}
 
 	return types.Counter(0), fmt.Errorf("%s key doesn't exists", key)
+}
+
+func (s *StatsMemory) UpdateAll(gauges types.Gauges, counters types.Counters) error {
+	for key, value := range gauges {
+		s.Gauges[key] = value
+	}
+
+	for key, value := range counters {
+		s.Counters[key] += value
+	}
+
+	return nil
 }

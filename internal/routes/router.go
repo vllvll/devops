@@ -36,4 +36,5 @@ func (ro *Router) RegisterHandlers() {
 	})
 	ro.Router.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", ro.handlers.SaveMetric())
 	ro.Router.Post("/update/", ro.handlers.SaveMetricJSON())
+	ro.Router.Post("/updates/", ro.handlers.BulkSaveMetricJSON())
 }

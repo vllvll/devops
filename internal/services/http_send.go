@@ -30,30 +30,33 @@ func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer) *Sender {
 }
 
 func (c Sender) Send(gauges types.Gauges, pollCount types.Counter) error {
-	for key, value := range gauges {
-		var gaugeValue = float64(value)
+	var metrics []types.Metrics
 
-		err := c.push(types.Metrics{
+	for key, value := range gauges {
+		gaugeValue := float64(value)
+
+		metrics = append(metrics, types.Metrics{
 			ID:    key,
 			MType: dictionaries.GaugeType,
 			Value: &gaugeValue,
 			Hash:  c.signer.GetHashGauge(key, gaugeValue),
 		})
-
-		if err != nil {
-			return err
-		}
 	}
 
 	var counterValue = int64(pollCount)
 
-	err := c.push(types.Metrics{
+	metrics = append(metrics, types.Metrics{
 		ID:    dictionaries.CounterPollCount,
 		MType: dictionaries.CounterType,
 		Delta: &counterValue,
 		Hash:  c.signer.GetHashCounter(dictionaries.CounterPollCount, counterValue),
 	})
 
+	if len(metrics) == 0 {
+		return nil
+	}
+
+	err := c.push(metrics)
 	if err != nil {
 		return err
 	}
@@ -61,10 +64,10 @@ func (c Sender) Send(gauges types.Gauges, pollCount types.Counter) error {
 	return nil
 }
 
-func (c Sender) push(metric types.Metrics) error {
+func (c Sender) push(metrics []types.Metrics) error {
 	_, err := c.Client.R().
-		SetBody(metric).
-		Post("/update/")
+		SetBody(metrics).
+		Post("/updates/")
 
 	if err != nil {
 		return err

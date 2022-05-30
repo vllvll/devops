@@ -145,3 +145,50 @@ func (s *StatsDatabase) GetCounterByKey(key string) (types.Counter, error) {
 
 	return counter, nil
 }
+
+func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmtGauges, err := tx.Prepare("INSERT INTO gauges (id, name, value) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET value = excluded.value")
+	if err != nil {
+		return err
+	}
+
+	stmtCounters, err := tx.Prepare("INSERT INTO counters (id, name, value) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET value = counters.value + excluded.value")
+	if err != nil {
+		return err
+	}
+
+	for key, value := range gauges {
+		id, _ := uuid.NewV4()
+
+		if _, err = stmtGauges.Exec(id.String(), key, value); err != nil {
+			if err = tx.Rollback(); err != nil {
+				log.Fatalf("Unable to rollback: %v", err)
+			}
+
+			return err
+		}
+	}
+
+	for key, value := range counters {
+		id, _ := uuid.NewV4()
+
+		if _, err = stmtCounters.Exec(id.String(), key, value); err != nil {
+			if err = tx.Rollback(); err != nil {
+				log.Fatalf("Unable to rollback: %v", err)
+			}
+
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("Unable to commit: %v", err)
+	}
+
+	return nil
+}
