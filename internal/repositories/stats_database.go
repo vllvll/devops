@@ -157,6 +157,11 @@ func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) 
 		return err
 	}
 
+	stmtCounters, err := tx.Prepare("INSERT INTO counters (id, name, value) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET value = counters.value + excluded.value")
+	if err != nil {
+		return err
+	}
+
 	for key, value := range gauges {
 		id, _ := uuid.NewV4()
 
@@ -169,20 +174,6 @@ func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) 
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Fatalf("Unable to commit: %v", err)
-	}
-
-	tx, err = s.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmtCounters, err := tx.Prepare("INSERT INTO counters (id, name, value) VALUES ($1, $2, $3) ON CONFLICT (name) DO UPDATE SET value = counters.value + excluded.value")
-	if err != nil {
-		return err
-	}
-
 	for key, value := range counters {
 		id, _ := uuid.NewV4()
 
@@ -193,10 +184,10 @@ func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) 
 
 			return err
 		}
+	}
 
-		if err := tx.Commit(); err != nil {
-			log.Fatalf("Unable to commit: %v", err)
-		}
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("Unable to commit: %v", err)
 	}
 
 	return nil

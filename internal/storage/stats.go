@@ -54,8 +54,6 @@ func (s *statsStorage) Save(statsRepository repositories.StatsRepository) {
 				panic(err)
 			}
 		}
-
-		// s.producer.Close()
 	}
 }
 

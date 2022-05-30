@@ -267,7 +267,7 @@ func (h Handler) BulkSaveMetricJSON() http.HandlerFunc {
 					return
 				}
 
-				counters[metric.ID] = types.Counter(*metric.Delta)
+				counters[metric.ID] += types.Counter(*metric.Delta)
 			}
 		}
 
