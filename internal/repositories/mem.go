@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/types"
 	"log"
@@ -11,22 +13,23 @@ import (
 
 type Mem struct {
 	mem       runtime.MemStats
-	gauges    types.Gauges
 	constants dictionaries.DictionaryInterface
 }
 
 type MemRepository interface {
-	GetGauges() types.Gauges
+	GetGauges(outGauges chan<- types.Gauges)
+	GetAdditionalGauges(outGauges chan<- types.Gauges, errCh chan<- error)
 }
 
 func NewMemRepository(constants dictionaries.DictionaryInterface) MemRepository {
 	return &Mem{
-		gauges:    types.Gauges{},
 		constants: constants,
 	}
 }
 
-func (m *Mem) GetGauges() types.Gauges {
+func (m *Mem) GetGauges(outGauges chan<- types.Gauges) {
+	var gauges = types.Gauges{}
+
 	runtime.ReadMemStats(&m.mem)
 
 	memReflect := reflect.ValueOf(&m.mem).Elem()
@@ -47,11 +50,30 @@ func (m *Mem) GetGauges() types.Gauges {
 				log.Fatalf("Error with get mem by key: %s", memReflect.Field(i).Kind())
 			}
 
-			m.gauges[memName] = memValue
+			gauges[memName] = memValue
 		}
 	}
 
-	m.gauges[dictionaries.GaugeRandomValue] = types.Gauge(rand.Float64())
+	gauges[dictionaries.GaugeRandomValue] = types.Gauge(rand.Float64())
 
-	return m.gauges
+	outGauges <- gauges
+}
+
+func (m *Mem) GetAdditionalGauges(outGauges chan<- types.Gauges, errCh chan<- error) {
+	var gauges = types.Gauges{}
+	memory, err := mem.VirtualMemory()
+	if err != nil {
+		errCh <- err
+	}
+
+	cpu, err := load.Avg()
+	if err != nil {
+		errCh <- err
+	}
+
+	gauges[dictionaries.GaugeTotalMemoryValue] = types.Gauge(memory.Total)
+	gauges[dictionaries.GaugeFreeMemoryValue] = types.Gauge(memory.Free)
+	gauges[dictionaries.GaugeCPUutilization1Value] = types.Gauge(cpu.Load1)
+
+	outGauges <- gauges
 }

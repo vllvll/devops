@@ -6,6 +6,8 @@ import (
 	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/types"
+	"sync"
+	"time"
 )
 
 type Sender struct {
@@ -29,39 +31,68 @@ func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer) *Sender {
 	}
 }
 
-func (c Sender) Send(gauges types.Gauges, pollCount types.Counter) error {
+func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics) {
+	go func() {
+		wg := &sync.WaitGroup{}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for gauges := range gaugesIn {
+				for key, value := range gauges {
+					gaugeValue := float64(value)
+
+					metricCh <- types.Metrics{
+						ID:    key,
+						MType: dictionaries.GaugeType,
+						Value: &gaugeValue,
+						Hash:  c.signer.GetHashGauge(key, gaugeValue),
+					}
+				}
+			}
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for counters := range countersIn {
+				for key, value := range counters {
+					var counterValue = int64(value)
+
+					metricCh <- types.Metrics{
+						ID:    key,
+						MType: dictionaries.CounterType,
+						Delta: &counterValue,
+						Hash:  c.signer.GetHashCounter(key, counterValue),
+					}
+				}
+			}
+		}()
+
+		wg.Wait()
+		close(metricCh)
+	}()
+}
+
+func (c Sender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
 	var metrics []types.Metrics
+	for {
+		select {
+		case <-reportTick:
+			err := c.push(metrics)
+			if err != nil {
+				errCh <- err
+			}
 
-	for key, value := range gauges {
-		gaugeValue := float64(value)
+		case metric, ok := <-metricCh:
+			metrics = append(metrics, metric)
 
-		metrics = append(metrics, types.Metrics{
-			ID:    key,
-			MType: dictionaries.GaugeType,
-			Value: &gaugeValue,
-			Hash:  c.signer.GetHashGauge(key, gaugeValue),
-		})
+			if !ok {
+
+				return
+			}
+		}
 	}
-
-	var counterValue = int64(pollCount)
-
-	metrics = append(metrics, types.Metrics{
-		ID:    dictionaries.CounterPollCount,
-		MType: dictionaries.CounterType,
-		Delta: &counterValue,
-		Hash:  c.signer.GetHashCounter(dictionaries.CounterPollCount, counterValue),
-	})
-
-	if len(metrics) == 0 {
-		return nil
-	}
-
-	err := c.push(metrics)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (c Sender) push(metrics []types.Metrics) error {
