@@ -65,61 +65,7 @@ func (s *StatsDatabase) UpdateCount(key string, value types.Counter) {
 }
 
 func (s *StatsDatabase) GetAll() (map[string]types.Gauge, map[string]types.Counter) {
-	var gaugeCount, counterCount int64
-
-	row := s.db.QueryRow("SELECT COUNT(*) as count FROM gauges")
-	err := row.Scan(&gaugeCount)
-	if err != nil {
-		log.Fatalf("Error with get gauge count: %v", err)
-	}
-
-	gauges := make(map[string]types.Gauge, gaugeCount)
-
-	rows, err := s.db.Query("SELECT name, value FROM gauges")
-	if err != nil || rows.Err() != nil {
-		log.Fatalf("Error with get gauge name and value: %v", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		var value types.Gauge
-
-		err = rows.Scan(&name, &value)
-		if err != nil {
-			log.Fatalf("Error with scan gauge: %v", err)
-		}
-
-		gauges[name] = value
-	}
-
-	row = s.db.QueryRow("SELECT COUNT(*) as count FROM counters")
-	err = row.Scan(&counterCount)
-	if err != nil {
-		log.Fatalf("Error with get counter count: %v", err)
-	}
-
-	counters := make(map[string]types.Counter, counterCount)
-
-	rows, err = s.db.Query("SELECT name, value FROM counters")
-	if err != nil || rows.Err() != nil {
-		log.Fatalf("Error with get counter name and value: %v", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		var value types.Counter
-
-		err = rows.Scan(&name, &value)
-		if err != nil {
-			log.Fatalf("Error with scan counter: %v", err)
-		}
-
-		counters[name] = value
-	}
-
-	return gauges, counters
+	return s.getGauges(), s.getCounters()
 }
 
 func (s *StatsDatabase) GetGaugeByKey(key string) (types.Gauge, error) {
@@ -195,4 +141,68 @@ func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) 
 	}
 
 	return nil
+}
+
+func (s *StatsDatabase) getGauges() map[string]types.Gauge {
+	var gaugeCount int64
+
+	row := s.db.QueryRow("SELECT COUNT(*) as count FROM gauges")
+	err := row.Scan(&gaugeCount)
+	if err != nil {
+		log.Fatalf("Error with get gauge count: %v", err)
+	}
+
+	gauges := make(map[string]types.Gauge, gaugeCount)
+
+	rows, err := s.db.Query("SELECT name, value FROM gauges")
+	if err != nil || rows.Err() != nil {
+		log.Fatalf("Error with get gauge name and value: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		var value types.Gauge
+
+		err = rows.Scan(&name, &value)
+		if err != nil {
+			log.Fatalf("Error with scan gauge: %v", err)
+		}
+
+		gauges[name] = value
+	}
+
+	return gauges
+}
+
+func (s *StatsDatabase) getCounters() map[string]types.Counter {
+	var counterCount int64
+
+	row := s.db.QueryRow("SELECT COUNT(*) as count FROM counters")
+	err := row.Scan(&counterCount)
+	if err != nil {
+		log.Fatalf("Error with get counter count: %v", err)
+	}
+
+	counters := make(map[string]types.Counter, counterCount)
+
+	rows, err := s.db.Query("SELECT name, value FROM counters")
+	if err != nil || rows.Err() != nil {
+		log.Fatalf("Error with get counter name and value: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		var value types.Counter
+
+		err = rows.Scan(&name, &value)
+		if err != nil {
+			log.Fatalf("Error with scan counter: %v", err)
+		}
+
+		counters[name] = value
+	}
+
+	return counters
 }
