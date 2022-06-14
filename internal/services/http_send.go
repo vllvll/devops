@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/go-resty/resty/v2"
 	jsoniter "github.com/json-iterator/go"
 	conf "github.com/vllvll/devops/internal/config"
@@ -31,8 +32,16 @@ func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer) *Sender {
 	}
 }
 
-func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics) {
+func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics, errCh chan<- error) {
 	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				errCh <- fmt.Errorf("panic: %v", err)
+
+				c.Prepare(gaugesIn, countersIn, metricCh, errCh)
+			}
+		}()
+
 		wg := &sync.WaitGroup{}
 
 		wg.Add(1)
@@ -75,6 +84,14 @@ func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Co
 }
 
 func (c Sender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
+	defer func() {
+		if err := recover(); err != nil {
+			errCh <- fmt.Errorf("panic: %v", err)
+
+			c.Send(metricCh, reportTick, errCh)
+		}
+	}()
+
 	var metrics []types.Metrics
 	for {
 		select {

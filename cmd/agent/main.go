@@ -39,7 +39,7 @@ func main() {
 	counterCh := make(chan types.Counters)
 
 	metricCh := make(chan types.Metrics)
-	go sender.Prepare(gaugesCh, counterCh, metricCh)
+	go sender.Prepare(gaugesCh, counterCh, metricCh, errCh)
 	go sender.Send(metricCh, reportTick, errCh)
 
 	for {
@@ -53,7 +53,7 @@ func main() {
 			return
 
 		case <-pollTick:
-			go memRepository.GetGauges(gaugesCh)
+			go memRepository.GetGauges(gaugesCh, errCh)
 			go memRepository.GetAdditionalGauges(gaugesCh, errCh)
 
 			pollCount++
