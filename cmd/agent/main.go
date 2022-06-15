@@ -21,9 +21,9 @@ func main() {
 
 	var pollTick = time.Tick(config.PollInterval)
 	var reportTick = time.Tick(config.ReportInterval)
+	var reportMain = time.Tick(config.ReportInterval)
 
 	var pollCount types.Counter
-	var gauges = types.Gauges{}
 
 	signer := services.NewMetricSigner(config.Key)
 	sender := services.NewSendClient(config, signer)
@@ -33,24 +33,38 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
+	errCh := make(chan error)
+
+	gaugesCh := make(chan types.Gauges)
+	counterCh := make(chan types.Counters)
+
+	metricCh := make(chan types.Metrics)
+	go sender.Prepare(gaugesCh, counterCh, metricCh, errCh)
+	go sender.Send(metricCh, reportTick, errCh)
+
 	for {
 		select {
 		case <-c:
 			log.Println("Graceful shutdown")
 
+			close(gaugesCh)
+			close(counterCh)
+
 			return
+
 		case <-pollTick:
+			go memRepository.GetGauges(gaugesCh, errCh)
+			go memRepository.GetAdditionalGauges(gaugesCh, errCh)
+
 			pollCount++
 
-			gauges = memRepository.GetGauges()
-
-		case <-reportTick:
-			err := sender.Send(gauges, pollCount)
-			if err != nil {
-				log.Printf("Error with send report: %v\n", err)
-			}
+		case <-reportMain:
+			counterCh <- types.Counters{dictionaries.CounterPollCount: pollCount}
 
 			pollCount = 0
+
+		case <-errCh:
+			log.Printf("Error: %v\n", err)
 		}
 	}
 }

@@ -6,6 +6,10 @@ const CounterType = "counter"
 const GaugeRandomValue = "RandomValue"
 const CounterPollCount = "PollCount"
 
+const GaugeTotalMemoryValue = "TotalMemory"
+const GaugeFreeMemoryValue = "FreeMemory"
+const GaugeCPUutilization1Value = "CPUutilization1"
+
 type Constants struct {
 	names []string
 }
