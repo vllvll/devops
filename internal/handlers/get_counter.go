@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// GetCounter Получение значения типа Counter по ключу
 func (h Handler) GetCounter() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		key := chi.URLParam(r, "key")

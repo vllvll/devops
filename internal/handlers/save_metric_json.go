@@ -8,6 +8,7 @@ import (
 	"github.com/vllvll/devops/internal/types"
 )
 
+// SaveMetricJSON Сохранение метрики, с данными в формате JSON
 func (h Handler) SaveMetricJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var metric types.Metrics

@@ -1,3 +1,4 @@
+// Package config служит для получения параметров запуска агента и сервера
 package config
 
 import (
@@ -8,12 +9,15 @@ import (
 )
 
 type AgentConfig struct {
-	Address        string        `env:"ADDRESS"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	Key            string        `env:"KEY"`
+	Address        string        `env:"ADDRESS"`         // Адрес для отправки значений
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"` // Периодичность отправки значений на сервер
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`   // Периодичность получения значений
+	Key            string        `env:"KEY"`             // Ключ шифрования сообщений
 }
 
+// CreateAgentConfig возвращает структуру конфига AgentConfig со значениями для работы агента.
+// Значения для конфига задаются через флаги или переменные окружения
+// Приоритет значений у переменных окружения
 func CreateAgentConfig() (*AgentConfig, error) {
 	var cfg AgentConfig
 
@@ -32,6 +36,7 @@ func CreateAgentConfig() (*AgentConfig, error) {
 	return &cfg, nil
 }
 
+// AddressWithHTTP получение адреса с http префиксом
 func (c AgentConfig) AddressWithHTTP() string {
 	return "http://" + c.Address
 }

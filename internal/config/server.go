@@ -8,14 +8,17 @@ import (
 )
 
 type ServerConfig struct {
-	Address       string        `env:"ADDRESS"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
-	Key           string        `env:"KEY"`
-	DatabaseDsn   string        `env:"DATABASE_DSN"`
+	Address       string        `env:"ADDRESS"`        // Адрес запуска HTTP-сервера
+	StoreInterval time.Duration `env:"STORE_INTERVAL"` // Интервал времени в секундах, по истечении которого текущие показания сервера сбрасываются на диск
+	StoreFile     string        `env:"STORE_FILE"`     // Имя файла, где хранятся значения
+	Restore       bool          `env:"RESTORE"`        // Возможность восстановления данных с диска при запуске
+	Key           string        `env:"KEY"`            // Ключ шифрования
+	DatabaseDsn   string        `env:"DATABASE_DSN"`   // Адрес подключения к БД
 }
 
+// CreateServerConfig возвращает структуру конфига ServerConfig со значениями для работы сервера.
+// Значения для конфига задаются через флаги или переменные окружения
+// Приоритет значений у переменных окружения
 func CreateServerConfig() (*ServerConfig, error) {
 	var cfg ServerConfig
 

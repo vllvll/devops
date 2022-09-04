@@ -6,6 +6,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
+// ConnectDatabase Инициализация базы данных
 func ConnectDatabase(dsn string) (*sql.DB, error) {
 	var db *sql.DB
 

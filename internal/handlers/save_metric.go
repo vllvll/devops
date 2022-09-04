@@ -10,6 +10,7 @@ import (
 	"github.com/vllvll/devops/internal/types"
 )
 
+// SaveMetric Сохранение метрики, с данными переданными в url
 func (h Handler) SaveMetric() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		format := chi.URLParam(r, "format")

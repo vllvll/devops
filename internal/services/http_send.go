@@ -1,3 +1,4 @@
+// Package services содержит вспомогательные сервисы
 package services
 
 import (
@@ -14,10 +15,11 @@ import (
 )
 
 type Sender struct {
-	Client *resty.Client
-	signer Signer
+	Client *resty.Client // HTTP клиент
+	signer Signer        // Сервис для подписи данных
 }
 
+// NewSendClient Создание сервиса для отправки данных из агента на сервер
 func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer) *Sender {
 	client := resty.New().
 		SetBaseURL(AgentConfig.AddressWithHTTP()).
@@ -29,6 +31,7 @@ func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer) *Sender {
 	}
 }
 
+// Prepare Подготовка метрик для отправки на сервер
 func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics, errCh chan<- error) {
 	go func() {
 		defer func() {
@@ -80,6 +83,7 @@ func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Co
 	}()
 }
 
+// Send Отправка метрик на сервер с определенной периодичностью
 func (c Sender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -111,6 +115,7 @@ func (c Sender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time,
 	}
 }
 
+// Внутренний метод для отправки метрик на сервер
 func (c Sender) push(metrics *[]types.Metrics) error {
 	content, err := json.Marshal(*metrics)
 	if err != nil {

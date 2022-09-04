@@ -1,3 +1,4 @@
+// Package handlers содержит обработчики проекта
 package handlers
 
 import (
@@ -9,11 +10,12 @@ import (
 )
 
 type Handler struct {
-	repository repositories.StatsRepository
-	signer     services.Signer
-	db         *sql.DB
+	repository repositories.StatsRepository // Сервис для чтения и записи данных метрик
+	signer     services.Signer              // Сервис для создания подписи
+	db         *sql.DB                      // База данных
 }
 
+// NewHandler Получение хендлера
 func NewHandler(repository repositories.StatsRepository, signer services.Signer, db *sql.DB) *Handler {
 	return &Handler{
 		repository: repository,
@@ -22,6 +24,7 @@ func NewHandler(repository repositories.StatsRepository, signer services.Signer,
 	}
 }
 
+// MetricHandlers Список методов для хендлеров (сервер)
 type MetricHandlers interface {
 	SaveMetricJSON() http.HandlerFunc
 	SaveMetric() http.HandlerFunc

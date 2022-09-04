@@ -1,3 +1,4 @@
+// Package repositories содержит классы для работы с ресурсами для получения и хранения данных
 package repositories
 
 import (
@@ -14,8 +15,8 @@ import (
 )
 
 type Mem struct {
-	mem       runtime.MemStats
-	constants dictionaries.DictionaryInterface
+	mem       runtime.MemStats                 // Статистика с данными о системе
+	constants dictionaries.DictionaryInterface // Словарь
 }
 
 type MemRepository interface {
@@ -23,12 +24,14 @@ type MemRepository interface {
 	GetAdditionalGauges(outGauges chan<- types.Gauges, errCh chan<- error)
 }
 
+// NewMemRepository Создание репозитория, который возвращает данные о системе
 func NewMemRepository(constants dictionaries.DictionaryInterface) MemRepository {
 	return &Mem{
 		constants: constants,
 	}
 }
 
+// GetGauges Получение основных данных из runtime.ReadMemStats в формате Gauge
 func (m *Mem) GetGauges(outGauges chan<- types.Gauges, errCh chan<- error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -69,6 +72,7 @@ func (m *Mem) GetGauges(outGauges chan<- types.Gauges, errCh chan<- error) {
 	outGauges <- gauges
 }
 
+// GetAdditionalGauges Получение дополнительных данных из mem.VirtualMemory в формате Gauge
 func (m *Mem) GetAdditionalGauges(outGauges chan<- types.Gauges, errCh chan<- error) {
 	defer func() {
 		if err := recover(); err != nil {

@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+// GetAll Получение всех метрик типа Gauge и Counter в текстовом формате
 func (h Handler) GetAll() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		gauges, counters := h.repository.GetAll()
