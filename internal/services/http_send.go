@@ -1,9 +1,9 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	jsoniter "github.com/json-iterator/go"
 	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/types"
@@ -17,14 +17,9 @@ type Sender struct {
 }
 
 func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer) *Sender {
-	json := jsoniter.ConfigCompatibleWithStandardLibrary
-
 	client := resty.New().
 		SetBaseURL(AgentConfig.AddressWithHTTP()).
 		SetHeader("Content-Type", "application/json")
-
-	client.JSONMarshal = json.Marshal
-	client.JSONUnmarshal = json.Unmarshal
 
 	return &Sender{
 		Client: client,
@@ -92,14 +87,16 @@ func (c Sender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time,
 		}
 	}()
 
-	var metrics []types.Metrics
+	var metrics = make([]types.Metrics, 0, 100)
 	for {
 		select {
 		case <-reportTick:
-			err := c.push(metrics)
+			err := c.push(&metrics)
 			if err != nil {
 				errCh <- err
 			}
+
+			metrics = metrics[:0]
 
 		case metric, ok := <-metricCh:
 			metrics = append(metrics, metric)
@@ -112,9 +109,14 @@ func (c Sender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time,
 	}
 }
 
-func (c Sender) push(metrics []types.Metrics) error {
-	_, err := c.Client.R().
-		SetBody(metrics).
+func (c Sender) push(metrics *[]types.Metrics) error {
+	content, err := json.Marshal(*metrics)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.Client.R().
+		SetBody(content).
 		Post("/updates/")
 
 	if err != nil {

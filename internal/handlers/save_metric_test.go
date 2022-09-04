@@ -1,11 +1,10 @@
-package main
+package handlers
 
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/vllvll/devops/internal/handlers"
 	"github.com/vllvll/devops/internal/repositories"
 	"github.com/vllvll/devops/internal/services"
 	"io/ioutil"
@@ -15,7 +14,7 @@ import (
 	"testing"
 )
 
-func TestSaveMetricHandler(t *testing.T) {
+func TestHandler_SaveMetric(t *testing.T) {
 	type want struct {
 		code        int
 		response    string
@@ -89,7 +88,7 @@ func TestSaveMetricHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repository := repositories.NewStatsMemoryRepository()
 			signer := services.NewMetricSigner("")
-			handler := handlers.NewHandler(repository, signer, nil)
+			handler := NewHandler(repository, signer, nil)
 
 			r := chi.NewRouter()
 			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())

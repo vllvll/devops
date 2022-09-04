@@ -20,6 +20,8 @@ func NewRouter(handlers handlers.Handler) Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(5))
 
+	// r.Mount("/debug", middleware.Profiler())
+
 	return Router{
 		Router:   r,
 		handlers: handlers,
