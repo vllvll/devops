@@ -3,12 +3,14 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/go-resty/resty/v2"
+
 	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/types"
-	"sync"
-	"time"
 )
 
 type Sender struct {

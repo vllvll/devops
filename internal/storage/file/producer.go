@@ -2,8 +2,9 @@ package file
 
 import (
 	"encoding/json"
-	"github.com/vllvll/devops/internal/types"
 	"os"
+
+	"github.com/vllvll/devops/internal/types"
 )
 
 type Producer struct {

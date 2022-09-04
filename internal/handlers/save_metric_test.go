@@ -2,16 +2,18 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/vllvll/devops/internal/repositories"
-	"github.com/vllvll/devops/internal/services"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/vllvll/devops/internal/repositories"
+	"github.com/vllvll/devops/internal/services"
 )
 
 func TestHandler_SaveMetric(t *testing.T) {

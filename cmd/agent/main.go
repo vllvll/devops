@@ -1,16 +1,17 @@
 package main
 
 import (
-	conf "github.com/vllvll/devops/internal/config"
-	"github.com/vllvll/devops/internal/dictionaries"
-	"github.com/vllvll/devops/internal/repositories"
-	"github.com/vllvll/devops/internal/services"
-	"github.com/vllvll/devops/internal/types"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	conf "github.com/vllvll/devops/internal/config"
+	"github.com/vllvll/devops/internal/dictionaries"
+	"github.com/vllvll/devops/internal/repositories"
+	"github.com/vllvll/devops/internal/services"
+	"github.com/vllvll/devops/internal/types"
 )
 
 func main() {

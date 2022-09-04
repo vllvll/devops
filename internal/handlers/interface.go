@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"database/sql"
+	"net/http"
+
 	"github.com/vllvll/devops/internal/repositories"
 	"github.com/vllvll/devops/internal/services"
-	"net/http"
 )
 
 type Handler struct {

@@ -2,13 +2,15 @@ package repositories
 
 import (
 	"fmt"
-	"github.com/shirou/gopsutil/v3/load"
-	"github.com/shirou/gopsutil/v3/mem"
-	"github.com/vllvll/devops/internal/dictionaries"
-	"github.com/vllvll/devops/internal/types"
 	"math/rand"
 	"reflect"
 	"runtime"
+
+	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v3/mem"
+
+	"github.com/vllvll/devops/internal/dictionaries"
+	"github.com/vllvll/devops/internal/types"
 )
 
 type Mem struct {

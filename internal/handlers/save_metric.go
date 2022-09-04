@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/vllvll/devops/internal/dictionaries"
-	"github.com/vllvll/devops/internal/types"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/vllvll/devops/internal/dictionaries"
+	"github.com/vllvll/devops/internal/types"
 )
 
 func (h Handler) SaveMetric() http.HandlerFunc {
