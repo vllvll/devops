@@ -2,16 +2,18 @@ package handlers
 
 import (
 	"encoding/json"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/vllvll/devops/internal/repositories"
 	"github.com/vllvll/devops/internal/services"
 	"github.com/vllvll/devops/internal/types"
-	"net/http/httptest"
-	"strings"
-	"testing"
 )
 
 func TestHandler_SaveMetricJSON(t *testing.T) {

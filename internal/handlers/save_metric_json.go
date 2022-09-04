@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/types"
-	"net/http"
 )
 
 func (h Handler) SaveMetricJSON() http.HandlerFunc {

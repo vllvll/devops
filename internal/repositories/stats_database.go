@@ -3,9 +3,11 @@ package repositories
 import (
 	"database/sql"
 	"fmt"
-	"github.com/gofrs/uuid"
-	"github.com/vllvll/devops/internal/types"
 	"log"
+
+	"github.com/gofrs/uuid"
+
+	"github.com/vllvll/devops/internal/types"
 )
 
 type StatsDatabase struct {

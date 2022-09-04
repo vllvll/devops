@@ -2,6 +2,13 @@ package main
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/handlers"
 	"github.com/vllvll/devops/internal/repositories"
@@ -10,12 +17,6 @@ import (
 	"github.com/vllvll/devops/internal/storage"
 	"github.com/vllvll/devops/internal/storage/file"
 	"github.com/vllvll/devops/pkg/postgres"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func main() {

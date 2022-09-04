@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"fmt"
+
 	"github.com/vllvll/devops/internal/types"
 )
 
