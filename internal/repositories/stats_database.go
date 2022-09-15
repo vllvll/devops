@@ -14,12 +14,14 @@ type StatsDatabase struct {
 	db *sql.DB
 }
 
+// NewStatsDatabaseRepository Создание репозитория, который отвечает за работу с бд
 func NewStatsDatabaseRepository(db *sql.DB) StatsRepository {
 	return &StatsDatabase{
 		db: db,
 	}
 }
 
+// UpdateGauge Обновить значение метрики с типом Gauge в бд
 func (s *StatsDatabase) UpdateGauge(key string, value types.Gauge) {
 	id, _ := uuid.NewV4()
 
@@ -43,6 +45,7 @@ func (s *StatsDatabase) UpdateGauge(key string, value types.Gauge) {
 	}
 }
 
+// UpdateCount Обновить значение метрики с типом Counter в бд
 func (s *StatsDatabase) UpdateCount(key string, value types.Counter) {
 	id, _ := uuid.NewV4()
 
@@ -66,10 +69,12 @@ func (s *StatsDatabase) UpdateCount(key string, value types.Counter) {
 	}
 }
 
+// GetAll Получение всех метрик из бд
 func (s *StatsDatabase) GetAll() (map[string]types.Gauge, map[string]types.Counter) {
 	return s.getGauges(), s.getCounters()
 }
 
+// GetGaugeByKey Получить значение метрики типа Gauge по ключу из бд
 func (s *StatsDatabase) GetGaugeByKey(key string) (types.Gauge, error) {
 	var gauge types.Gauge
 
@@ -82,6 +87,7 @@ func (s *StatsDatabase) GetGaugeByKey(key string) (types.Gauge, error) {
 	return gauge, nil
 }
 
+// GetCounterByKey Получить значение метрики типа Counter по ключу из бд
 func (s *StatsDatabase) GetCounterByKey(key string) (types.Counter, error) {
 	var counter types.Counter
 
@@ -94,6 +100,7 @@ func (s *StatsDatabase) GetCounterByKey(key string) (types.Counter, error) {
 	return counter, nil
 }
 
+// UpdateAll Обновление всех значений типов Gauge и Counter в бд
 func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -145,6 +152,7 @@ func (s *StatsDatabase) UpdateAll(gauges types.Gauges, counters types.Counters) 
 	return nil
 }
 
+// getGauges Получение всех значений типа Gauge из бд
 func (s *StatsDatabase) getGauges() map[string]types.Gauge {
 	var gaugeCount int64
 
@@ -177,6 +185,7 @@ func (s *StatsDatabase) getGauges() map[string]types.Gauge {
 	return gauges
 }
 
+// getCounters Получение всех значений типа Gauge Counter бд
 func (s *StatsDatabase) getCounters() map[string]types.Counter {
 	var counterCount int64
 

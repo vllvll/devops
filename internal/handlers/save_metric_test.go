@@ -16,6 +16,14 @@ import (
 	"github.com/vllvll/devops/internal/services"
 )
 
+func Example_saveMetric() {
+	_, _ = http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("/update/%s/%s/%d", "counter", "CounterPollCount", 10),
+		nil,
+	)
+}
+
 func TestHandler_SaveMetric(t *testing.T) {
 	type want struct {
 		code        int

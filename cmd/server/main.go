@@ -1,3 +1,4 @@
+// Модуль Server принимает запросы от агентов
 package main
 
 import (

@@ -16,23 +16,26 @@ import (
 	"github.com/vllvll/devops/internal/types"
 )
 
-func Example_saveMetricJSON() {
-	body, _ := json.Marshal(types.Metrics{
+func Example_bulkSaveMetricJSON() {
+	metrics := make([]types.Metrics, 0)
+	metrics = append(metrics, types.Metrics{
 		ID:    "Alloc",
 		MType: "gauge",
 		Value: getGauge(0.1),
 		Hash:  "",
 	})
 
+	body, _ := json.Marshal(metrics)
+
 	client := resty.New().
 		SetHeader("Content-Type", "application/json")
 	client.JSONMarshal = json.Marshal
 	client.JSONUnmarshal = json.Unmarshal
 
-	_, _ = client.R().SetBody(body).Post("/update/")
+	_, _ = client.R().SetBody(body).Post("/updates/")
 }
 
-func TestHandler_SaveMetricJSON(t *testing.T) {
+func TestHandler_BulkSaveMetricJSON(t *testing.T) {
 	type want struct {
 		code        int
 		response    string
@@ -56,8 +59,8 @@ func TestHandler_SaveMetricJSON(t *testing.T) {
 			},
 			want: want{
 				code:        200,
-				response:    "",
-				contentType: "",
+				response:    "OK",
+				contentType: "text/plain; charset=utf-8",
 			},
 		},
 		{
@@ -71,8 +74,8 @@ func TestHandler_SaveMetricJSON(t *testing.T) {
 			},
 			want: want{
 				code:        200,
-				response:    "",
-				contentType: "",
+				response:    "OK",
+				contentType: "text/plain; charset=utf-8",
 			},
 		},
 		{
@@ -99,7 +102,7 @@ func TestHandler_SaveMetricJSON(t *testing.T) {
 			handler := NewHandler(repository, signer, nil)
 
 			r := chi.NewRouter()
-			r.Post("/update/", handler.SaveMetricJSON())
+			r.Post("/updates/", handler.BulkSaveMetricJSON())
 
 			client := resty.New().
 				SetHeader("Content-Type", "application/json")
@@ -109,7 +112,10 @@ func TestHandler_SaveMetricJSON(t *testing.T) {
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 
-			response, err := client.R().SetBody(tt.metric).Post(ts.URL + "/update/")
+			metrics := make([]types.Metrics, 0)
+			metrics = append(metrics, tt.metric)
+
+			response, err := client.R().SetBody(metrics).Post(ts.URL + "/updates/")
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want.code, response.StatusCode())
@@ -117,12 +123,4 @@ func TestHandler_SaveMetricJSON(t *testing.T) {
 			assert.Equal(t, tt.want.contentType, response.Header().Get("Content-Type"))
 		})
 	}
-}
-
-func getGauge(value float64) *float64 {
-	return &value
-}
-
-func getCounter(value int64) *int64 {
-	return &value
 }

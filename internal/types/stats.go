@@ -1,3 +1,4 @@
+// Package types Функционал для работы с типами Gauge и Counter
 package types
 
 import (
@@ -8,10 +9,12 @@ import (
 
 type Gauge float64
 
+// Value Переопределение форматирования типа Gauge при получении значения в бд
 func (g Gauge) Value() (driver.Value, error) {
 	return strconv.FormatFloat(float64(g), 'f', -1, 64), nil
 }
 
+// Scan конвертация значения для типа Gauge
 func (g *Gauge) Scan(value interface{}) error {
 	sv, err := driver.String.ConvertValue(value)
 	if err != nil {
@@ -30,10 +33,12 @@ func (g *Gauge) Scan(value interface{}) error {
 
 type Counter int64
 
+// Value Переопределение форматирования типа Counter при получении значения в бд
 func (c Counter) Value() (driver.Value, error) {
 	return strconv.FormatInt(int64(c), 10), nil
 }
 
+// Scan конвертация значения для типа Counter
 func (c *Counter) Scan(value interface{}) error {
 	sv, err := driver.String.ConvertValue(value)
 	if err != nil {
@@ -54,6 +59,7 @@ func (c *Counter) Scan(value interface{}) error {
 type Counters map[string]Counter
 type Gauges map[string]Gauge
 
+// Metrics тип метрики
 type Metrics struct {
 	ID    string   `json:"id"`              // Имя метрики
 	MType string   `json:"type"`            // Параметр, принимающий значение gauge или counter

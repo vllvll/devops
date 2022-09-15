@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// GetGauge Получение значения типа Gauge по ключу
 func (h Handler) GetGauge() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		key := chi.URLParam(r, "key")

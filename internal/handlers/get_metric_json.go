@@ -8,6 +8,7 @@ import (
 	"github.com/vllvll/devops/internal/types"
 )
 
+// GetMetricJSON Получение метрики в формате JSON с хешем
 func (h Handler) GetMetricJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var metric types.Metrics

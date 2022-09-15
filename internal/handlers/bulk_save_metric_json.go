@@ -8,6 +8,7 @@ import (
 	"github.com/vllvll/devops/internal/types"
 )
 
+// BulkSaveMetricJSON Сохранение всех описанных метрик (Gauge, Counter) в запросе за один раз
 func (h Handler) BulkSaveMetricJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		var metrics []types.Metrics

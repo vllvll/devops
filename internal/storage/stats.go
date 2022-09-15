@@ -14,6 +14,7 @@ type statsStorage struct {
 	producer file.ProducerFile
 }
 
+// NewStatsStorage Создание обработчика для восстановления данных в памяти при инициализации
 func NewStatsStorage(serverConfig *conf.ServerConfig, consumer file.ConsumerFile, producer file.ProducerFile) *statsStorage {
 	return &statsStorage{
 		config:   serverConfig,
@@ -22,6 +23,7 @@ func NewStatsStorage(serverConfig *conf.ServerConfig, consumer file.ConsumerFile
 	}
 }
 
+// Save Сохранение данных метрик перед отключением приложения
 func (s *statsStorage) Save(statsRepository repositories.StatsRepository) {
 	if s.config.DatabaseDsn == "" {
 		var metrics []types.Metrics
@@ -57,6 +59,7 @@ func (s *statsStorage) Save(statsRepository repositories.StatsRepository) {
 	}
 }
 
+// Start Восстановление метрик перед инициализацией приложения
 func (s *statsStorage) Start(statsRepository repositories.StatsRepository) (repositories.StatsRepository, error) {
 	if s.config.DatabaseDsn == "" && s.config.Restore {
 		for {

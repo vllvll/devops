@@ -17,6 +17,7 @@ type ProducerFile interface {
 	Close() error
 }
 
+// NewFileProducer Создание обработчика для записи в файл
 func NewFileProducer(filename string) (ProducerFile, error) {
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_CREATE, 0777)
 	if err != nil {
@@ -29,10 +30,12 @@ func NewFileProducer(filename string) (ProducerFile, error) {
 	}, nil
 }
 
+// WriteMetric Запись метрики в файл
 func (p *Producer) WriteMetric(metrics *types.Metrics) error {
 	return p.encoder.Encode(&metrics)
 }
 
+// Close Закрытие файла
 func (p *Producer) Close() error {
 	return p.file.Close()
 }

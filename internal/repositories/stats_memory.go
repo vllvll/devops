@@ -20,6 +20,7 @@ type StatsRepository interface {
 	UpdateAll(gauges types.Gauges, counters types.Counters) error
 }
 
+// NewStatsMemoryRepository Создание репозитория, который отвечает за хранение метрик в оперативной памяти
 func NewStatsMemoryRepository() StatsRepository {
 	return &StatsMemory{
 		Gauges:   types.Gauges{},
@@ -27,18 +28,22 @@ func NewStatsMemoryRepository() StatsRepository {
 	}
 }
 
+// UpdateGauge Обновить значение метрики с типом Gauge в оперативной памяти
 func (s *StatsMemory) UpdateGauge(key string, value types.Gauge) {
 	s.Gauges[key] = value
 }
 
+// UpdateCount Обновить значение метрики с типом Counter в оперативной памяти
 func (s *StatsMemory) UpdateCount(key string, value types.Counter) {
 	s.Counters[key] += value
 }
 
+// GetAll Получение всех метрик из оперативной памяти
 func (s *StatsMemory) GetAll() (map[string]types.Gauge, map[string]types.Counter) {
 	return s.Gauges, s.Counters
 }
 
+// GetGaugeByKey Получить значение метрики типа Gauge по ключу из оперативной памяти
 func (s *StatsMemory) GetGaugeByKey(key string) (types.Gauge, error) {
 	if value, ok := s.Gauges[key]; ok {
 		return value, nil
@@ -47,6 +52,7 @@ func (s *StatsMemory) GetGaugeByKey(key string) (types.Gauge, error) {
 	return types.Gauge(0), fmt.Errorf("%s key doesn't exists", key)
 }
 
+// GetCounterByKey Получить значение метрики типа Counter по ключу из оперативной памяти
 func (s *StatsMemory) GetCounterByKey(key string) (types.Counter, error) {
 	if value, ok := s.Counters[key]; ok {
 		return value, nil
@@ -55,6 +61,7 @@ func (s *StatsMemory) GetCounterByKey(key string) (types.Counter, error) {
 	return types.Counter(0), fmt.Errorf("%s key doesn't exists", key)
 }
 
+// UpdateAll Обновление всех значений типов Gauge и Counter в оперативной памяти
 func (s *StatsMemory) UpdateAll(gauges types.Gauges, counters types.Counters) error {
 	for key, value := range gauges {
 		s.Gauges[key] = value

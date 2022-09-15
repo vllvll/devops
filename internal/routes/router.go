@@ -1,3 +1,4 @@
+// Package routes содержит функционал для работы роутингом
 package routes
 
 import (
@@ -8,10 +9,11 @@ import (
 )
 
 type Router struct {
-	Router   chi.Router
-	handlers handlers.Handler
+	Router   chi.Router       // Роутер
+	handlers handlers.Handler // Обработчики
 }
 
+// NewRouter Регистрируем middleware и возвращаем роутер
 func NewRouter(handlers handlers.Handler) Router {
 	r := chi.NewRouter()
 
@@ -29,6 +31,7 @@ func NewRouter(handlers handlers.Handler) Router {
 	}
 }
 
+// RegisterHandlers Регистрируем обработчики
 func (ro *Router) RegisterHandlers() {
 	ro.Router.Get("/", ro.handlers.GetAll())
 	ro.Router.Get("/ping", ro.handlers.Ping())
