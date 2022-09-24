@@ -1,3 +1,4 @@
+// Package storage Функционал для работы с хранилищами
 package storage
 
 import (
