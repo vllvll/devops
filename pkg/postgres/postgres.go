@@ -1,3 +1,4 @@
+// Package postgres Функционал для работы с PostgreSQL
 package postgres
 
 import (
