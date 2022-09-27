@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"text/template"
 	"time"
 
 	conf "github.com/vllvll/devops/internal/config"
@@ -20,7 +21,29 @@ import (
 	"github.com/vllvll/devops/pkg/postgres"
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
+const BuildTemplate = `
+Build version: {{if .version}}{{ .version }}{{ else }}N/A{{ end }}
+Build date: {{if .date}}{{ .date }}{{ else }}N/A{{ end }}
+Build commit: {{if .commit}}{{ .commit }}{{ else }}N/A{{ end }}
+`
+
 func main() {
+	t := template.Must(template.New("build").Parse(BuildTemplate))
+	err := t.Execute(os.Stdout, map[string]string{
+		"version": buildVersion,
+		"date":    buildDate,
+		"commit":  buildCommit,
+	})
+	if err != nil {
+		log.Fatalf("Error with config: %v", err)
+	}
+
 	config, err := conf.CreateServerConfig()
 	if err != nil {
 		log.Fatalf("Error with config: %v", err)
