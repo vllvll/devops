@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/vllvll/devops/internal/dictionaries"
@@ -15,7 +16,23 @@ func (h Handler) BulkSaveMetricJSON() http.HandlerFunc {
 		var counters = types.Counters{}
 		var gauges = types.Gauges{}
 
-		if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
+		encodedContent, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+
+			return
+		}
+
+		if h.decrypt != nil {
+			encodedContent, err = h.decrypt.Decrypt(encodedContent)
+			if err != nil {
+				http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+
+				return
+			}
+		}
+
+		if err := json.Unmarshal(encodedContent, &metrics); err != nil {
 			http.Error(rw, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 
 			return
@@ -42,7 +59,7 @@ func (h Handler) BulkSaveMetricJSON() http.HandlerFunc {
 			}
 		}
 
-		err := h.repository.UpdateAll(gauges, counters)
+		err = h.repository.UpdateAll(gauges, counters)
 		if err != nil {
 			http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 

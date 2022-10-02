@@ -15,19 +15,21 @@ import (
 )
 
 type Sender struct {
-	Client *resty.Client // HTTP клиент
-	signer Signer        // Сервис для подписи данных
+	Client  *resty.Client // HTTP клиент
+	signer  Signer        // Сервис для подписи данных
+	encrypt Encrypt       // Сервис для ассиметричного шифрования
 }
 
 // NewSendClient Создание сервиса для отправки данных из агента на сервер
-func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer) *Sender {
+func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Encrypt) *Sender {
 	client := resty.New().
 		SetBaseURL(AgentConfig.AddressWithHTTP()).
 		SetHeader("Content-Type", "application/json")
 
 	return &Sender{
-		Client: client,
-		signer: signer,
+		Client:  client,
+		signer:  signer,
+		encrypt: encrypt,
 	}
 }
 
@@ -120,6 +122,13 @@ func (c Sender) push(metrics *[]types.Metrics) error {
 	content, err := json.Marshal(*metrics)
 	if err != nil {
 		return err
+	}
+
+	if c.encrypt != nil {
+		content, err = c.encrypt.Encrypt(content)
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = c.Client.R().

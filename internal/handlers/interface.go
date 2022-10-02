@@ -13,14 +13,16 @@ type Handler struct {
 	repository repositories.StatsRepository // Сервис для чтения и записи данных метрик
 	signer     services.Signer              // Сервис для создания подписи
 	db         *sql.DB                      // База данных
+	decrypt    services.Decrypt             // Сервис для расшифрования данных
 }
 
 // NewHandler Получение хендлера
-func NewHandler(repository repositories.StatsRepository, signer services.Signer, db *sql.DB) *Handler {
+func NewHandler(repository repositories.StatsRepository, signer services.Signer, db *sql.DB, decrypt services.Decrypt) *Handler {
 	return &Handler{
 		repository: repository,
 		signer:     signer,
 		db:         db,
+		decrypt:    decrypt,
 	}
 }
 

@@ -13,6 +13,7 @@ type AgentConfig struct {
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"` // Периодичность отправки значений на сервер
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`   // Периодичность получения значений
 	Key            string        `env:"KEY"`             // Ключ шифрования сообщений
+	CryptoKey      string        `env:"CRYPTO_KEY"`      // Путь до файла с публичным ключом
 }
 
 // CreateAgentConfig возвращает структуру конфига AgentConfig со значениями для работы агента.
@@ -25,6 +26,7 @@ func CreateAgentConfig() (*AgentConfig, error) {
 	flag.DurationVarP(&cfg.ReportInterval, "report", "r", 10*time.Second, "Report interval. Format: any input valid for time.ParseDuration (for example: 1s)")
 	flag.DurationVarP(&cfg.PollInterval, "poll", "p", 2*time.Second, "Poll interval. Format: any input valid for time.ParseDuration (for example: 1s)")
 	flag.StringVarP(&cfg.Key, "key", "k", "", "Key. Format: string (for example: ?)")
+	flag.StringVarP(&cfg.CryptoKey, "crypto-key", "c", "", "Path for public key")
 
 	flag.Parse()
 
