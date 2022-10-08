@@ -14,6 +14,7 @@ type ServerConfig struct {
 	Restore       bool          `env:"RESTORE"`        // Возможность восстановления данных с диска при запуске
 	Key           string        `env:"KEY"`            // Ключ шифрования
 	DatabaseDsn   string        `env:"DATABASE_DSN"`   // Адрес подключения к БД
+	CryptoKey     string        `env:"CRYPTO_KEY"`     // Путь до файла с приватным ключом
 }
 
 // CreateServerConfig возвращает структуру конфига ServerConfig со значениями для работы сервера.
@@ -28,6 +29,7 @@ func CreateServerConfig() (*ServerConfig, error) {
 	flag.BoolVarP(&cfg.Restore, "restore", "r", true, "Restore. Format: bool (for example: true")
 	flag.StringVarP(&cfg.Key, "key", "k", "", "Key. Format: string (for example: ?)")
 	flag.StringVarP(&cfg.DatabaseDsn, "database-dsn", "d", "", "Database dsn. Format: string (for example: postgres://username:password@localhost:5432/database_name)")
+	flag.StringVarP(&cfg.CryptoKey, "crypto-key", "c", "", "Path for private key")
 
 	flag.Parse()
 

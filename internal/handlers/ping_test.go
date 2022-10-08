@@ -23,7 +23,8 @@ func TestHandler_Ping(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		repository := repositories.NewStatsMemoryRepository()
 		signer := services.NewMetricSigner("")
-		handler := NewHandler(repository, signer, nil)
+		decrypt, _ := services.NewMetricDecrypt("")
+		handler := NewHandler(repository, signer, nil, decrypt)
 
 		r := chi.NewRouter()
 		r.Get("/ping", handler.Ping())

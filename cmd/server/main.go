@@ -62,8 +62,13 @@ func main() {
 		statsRepository = repositories.NewStatsMemoryRepository()
 	}
 
+	decrypt, err := services.NewMetricDecrypt(config.CryptoKey)
+	if err != nil {
+		log.Fatalf("Ошибка с инициализацией сервиса шифрования: %v", err)
+	}
+
 	signer := services.NewMetricSigner(config.Key)
-	handler := handlers.NewHandler(statsRepository, signer, db)
+	handler := handlers.NewHandler(statsRepository, signer, db, decrypt)
 	router := routes.NewRouter(*handler)
 	router.RegisterHandlers()
 
