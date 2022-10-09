@@ -75,8 +75,6 @@ func main() {
 	for {
 		select {
 		case <-c:
-			log.Println("Graceful shutdown")
-
 			close(gaugesCh)
 			close(counterCh)
 

@@ -109,8 +109,6 @@ func main() {
 	for {
 		select {
 		case <-c:
-			log.Println("Graceful shutdown")
-
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 			if err := httpServer.Shutdown(ctx); err != nil {
