@@ -5,14 +5,15 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"os"
 )
 
+// Размер ключа
+const bitSize = 131072
+
 func main() {
 	reader := rand.Reader
-	bitSize := 131072
 
 	privateKey, err := rsa.GenerateKey(reader, bitSize)
 	if err != nil {
@@ -21,7 +22,7 @@ func main() {
 
 	privateKeyFile, err := os.Create("cert/private.key")
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 
 		return
 	}
@@ -29,7 +30,7 @@ func main() {
 
 	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 
 		return
 	}
@@ -41,7 +42,7 @@ func main() {
 
 	err = pem.Encode(privateKeyFile, privateKeyPEM)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 
 		return
 	}
@@ -50,7 +51,7 @@ func main() {
 
 	publicKeyFile, err := os.Create("cert/public.key")
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 
 		return
 	}
@@ -58,7 +59,7 @@ func main() {
 
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&publicKey)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 
 		return
 	}
@@ -70,7 +71,7 @@ func main() {
 
 	err = pem.Encode(publicKeyFile, publicKeyPEM)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 
 		return
 	}
