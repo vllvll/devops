@@ -50,8 +50,13 @@ func main() {
 
 	var pollCount types.Counter
 
+	crypt, err := services.NewMetricEncrypt(config.CryptoKey)
+	if err != nil {
+		log.Fatalf("Ошибка с инициализацией сервиса шифрования: %v", err)
+	}
+
 	signer := services.NewMetricSigner(config.Key)
-	sender := services.NewSendClient(config, signer)
+	sender := services.NewSendClient(config, signer, crypt)
 	constants := dictionaries.NewMemConstants()
 	memRepository := repositories.NewMemRepository(constants)
 
@@ -70,8 +75,6 @@ func main() {
 	for {
 		select {
 		case <-c:
-			log.Println("Graceful shutdown")
-
 			close(gaugesCh)
 			close(counterCh)
 

@@ -28,14 +28,14 @@ func TestHandler_GetCounter(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		signerKey string
-		metric    types.Metrics
-		want      want
+		name           string
+		signerKey      string
+		privateKeyPath string
+		metric         types.Metrics
+		want           want
 	}{
 		{
-			name:      "counter success",
-			signerKey: "",
+			name: "counter success",
 			metric: types.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
@@ -49,8 +49,7 @@ func TestHandler_GetCounter(t *testing.T) {
 			},
 		},
 		{
-			name:      "without counter key",
-			signerKey: "",
+			name: "without counter key",
 			metric: types.Metrics{
 				Delta: getCounter(100),
 			},
@@ -68,7 +67,8 @@ func TestHandler_GetCounter(t *testing.T) {
 			repository.UpdateCount(tt.metric.ID, types.Counter(*tt.metric.Delta))
 
 			signer := services.NewMetricSigner(tt.signerKey)
-			handler := NewHandler(repository, signer, nil)
+			decrypt, _ := services.NewMetricDecrypt(tt.privateKeyPath)
+			handler := NewHandler(repository, signer, nil, decrypt)
 
 			r := chi.NewRouter()
 			r.Get("/value/counter/{key:[A-Za-z0-9]+}", handler.GetCounter())

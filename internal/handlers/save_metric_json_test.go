@@ -40,14 +40,14 @@ func TestHandler_SaveMetricJSON(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		signerKey string
-		metric    types.Metrics
-		want      want
+		name           string
+		signerKey      string
+		privateKeyPath string
+		metric         types.Metrics
+		want           want
 	}{
 		{
-			name:      "gauge success",
-			signerKey: "",
+			name: "gauge success",
 			metric: types.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
@@ -61,8 +61,7 @@ func TestHandler_SaveMetricJSON(t *testing.T) {
 			},
 		},
 		{
-			name:      "counter success",
-			signerKey: "",
+			name: "counter success",
 			metric: types.Metrics{
 				ID:    "PollCount",
 				MType: "counter",
@@ -96,7 +95,8 @@ func TestHandler_SaveMetricJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repository := repositories.NewStatsMemoryRepository()
 			signer := services.NewMetricSigner(tt.signerKey)
-			handler := NewHandler(repository, signer, nil)
+			decrypt, _ := services.NewMetricDecrypt(tt.privateKeyPath)
+			handler := NewHandler(repository, signer, nil, decrypt)
 
 			r := chi.NewRouter()
 			r.Post("/update/", handler.SaveMetricJSON())

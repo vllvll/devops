@@ -28,14 +28,14 @@ func TestHandler_GetGauge(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		signerKey string
-		metric    types.Metrics
-		want      want
+		name           string
+		signerKey      string
+		privateKeyPath string
+		metric         types.Metrics
+		want           want
 	}{
 		{
-			name:      "gauge success",
-			signerKey: "",
+			name: "gauge success",
 			metric: types.Metrics{
 				ID:    "Alloc",
 				MType: "gauge",
@@ -49,8 +49,7 @@ func TestHandler_GetGauge(t *testing.T) {
 			},
 		},
 		{
-			name:      "without gauge key",
-			signerKey: "",
+			name: "without gauge key",
 			metric: types.Metrics{
 				Value: getGauge(0),
 			},
@@ -68,7 +67,8 @@ func TestHandler_GetGauge(t *testing.T) {
 			repository.UpdateGauge(tt.metric.ID, types.Gauge(*tt.metric.Value))
 
 			signer := services.NewMetricSigner(tt.signerKey)
-			handler := NewHandler(repository, signer, nil)
+			decrypt, _ := services.NewMetricDecrypt(tt.privateKeyPath)
+			handler := NewHandler(repository, signer, nil, decrypt)
 
 			r := chi.NewRouter()
 			r.Get("/value/gauge/{key:[A-Za-z0-9]+}", handler.GetGauge())

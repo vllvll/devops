@@ -98,7 +98,8 @@ func TestHandler_SaveMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repository := repositories.NewStatsMemoryRepository()
 			signer := services.NewMetricSigner("")
-			handler := NewHandler(repository, signer, nil)
+			decrypt, _ := services.NewMetricDecrypt("")
+			handler := NewHandler(repository, signer, nil, decrypt)
 
 			r := chi.NewRouter()
 			r.Post("/update/{format:[A-Za-z]+}/{key:[A-Za-z0-9]+}/{value:[A-Za-z0-9.]+}", handler.SaveMetric())
