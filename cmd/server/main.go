@@ -69,7 +69,7 @@ func main() {
 
 	signer := services.NewMetricSigner(config.Key)
 	handler := handlers.NewHandler(statsRepository, signer, db, decrypt)
-	router := routes.NewRouter(*handler)
+	router := routes.NewRouter(*handler, config.TrustedSubnet)
 	router.RegisterHandlers()
 
 	consumer, err := file.NewFileConsumer(config.StoreFile)
