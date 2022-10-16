@@ -56,7 +56,10 @@ func main() {
 	}
 
 	signer := services.NewMetricSigner(config.Key)
-	sender := services.NewSendClient(config, signer, crypt)
+	sender, err := services.NewSendClient(config, signer, crypt)
+	if err != nil {
+		log.Fatalf("Ошибка с иницализацией сервиса http клиента: %v", err)
+	}
 	constants := dictionaries.NewMemConstants()
 	memRepository := repositories.NewMemRepository(constants)
 

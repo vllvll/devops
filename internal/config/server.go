@@ -16,6 +16,7 @@ type jsonServerConfig struct {
 	StoreFile     string `json:"store_file"`
 	DatabaseDsn   string `json:"database_dsn"`
 	CryptoKey     string `json:"crypto_key"`
+	TrustedSubnet string `json:"trusted_subnet"`
 }
 
 type ServerConfig struct {
@@ -26,6 +27,7 @@ type ServerConfig struct {
 	Key           string        `env:"KEY"`            // Ключ шифрования
 	DatabaseDsn   string        `env:"DATABASE_DSN"`   // Адрес подключения к БД
 	CryptoKey     string        `env:"CRYPTO_KEY"`     // Путь до файла с приватным ключом
+	TrustedSubnet string        `env:"TRUSTED_SUBNET"` // Доверенная подсеть (CIDR)
 }
 
 // CreateServerConfig возвращает структуру конфига ServerConfig со значениями для работы сервера.
@@ -76,6 +78,7 @@ func CreateServerConfig() (*ServerConfig, error) {
 	flag.StringVarP(&config.Key, "key", "k", "", "Key. Format: string (for example: ?)")
 	flag.StringVarP(&config.DatabaseDsn, "database-dsn", "d", jsonConfig.DatabaseDsn, "Database dsn. Format: string (for example: postgres://username:password@localhost:5432/database_name)")
 	flag.StringVarP(&config.CryptoKey, "crypto-key", "y", jsonConfig.CryptoKey, "Path for private key")
+	flag.StringVarP(&config.TrustedSubnet, "trusted-subnet", "t", jsonConfig.TrustedSubnet, "CIDR")
 
 	flag.Parse()
 

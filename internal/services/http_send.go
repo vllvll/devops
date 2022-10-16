@@ -4,6 +4,7 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -21,16 +22,33 @@ type Sender struct {
 }
 
 // NewSendClient Создание сервиса для отправки данных из агента на сервер
-func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Encrypt) *Sender {
+func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Encrypt) (*Sender, error) {
+	var ip string
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range addresses {
+		if ipNet, ok := a.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			ip = ipNet.IP.String()
+		}
+	}
+
+	if ip == "" {
+		return nil, fmt.Errorf("ip адрес не найден")
+	}
+
 	client := resty.New().
 		SetBaseURL(AgentConfig.AddressWithHTTP()).
-		SetHeader("Content-Type", "application/json")
+		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Real-IP", ip)
 
 	return &Sender{
 		Client:  client,
 		signer:  signer,
 		encrypt: encrypt,
-	}
+	}, nil
 }
 
 // Prepare Подготовка метрик для отправки на сервер
