@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/vllvll/devops/proto";
+
+message Metric {
+  string id = 1;
+  enum Type {
+    GAUGE = 0;
+    COUNTER = 1;
+  }
+  Type m_type = 2;
+  optional int64 delta = 3;
+  optional double value = 4;
+  optional string hash = 5;
+}
+
+message BulkMetrics {
+  repeated Metric metrics = 1;
+}
+
+message AddBulkMetricsRequest {
+  BulkMetrics metrics = 1;
+}
+
+message AddBulkMetricsResponse {
+  string error = 1;
+}
+
+service Metrics {
+  rpc BulkSaveMetrics(AddBulkMetricsRequest) returns (AddBulkMetricsResponse);
+}
