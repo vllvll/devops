@@ -2,9 +2,9 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"sync"
 	"time"
 
@@ -23,20 +23,9 @@ type Sender struct {
 
 // NewSendClient Создание сервиса для отправки данных из агента на сервер
 func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Encrypt) (*Sender, error) {
-	var ip string
-	addresses, err := net.InterfaceAddrs()
+	ip, err := AgentConfig.GetServiceIP()
 	if err != nil {
-		return nil, err
-	}
-
-	for _, a := range addresses {
-		if ipNet, ok := a.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
-			ip = ipNet.IP.String()
-		}
-	}
-
-	if ip == "" {
-		return nil, fmt.Errorf("ip адрес не найден")
+		return nil, fmt.Errorf("IP адрес не найден")
 	}
 
 	client := resty.New().
@@ -52,13 +41,13 @@ func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Encrypt
 }
 
 // Prepare Подготовка метрик для отправки на сервер
-func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics, errCh chan<- error) {
+func (c Sender) Prepare(ctx context.Context, gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics, errCh chan<- error) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
 				errCh <- fmt.Errorf("panic: %v", err)
 
-				c.Prepare(gaugesIn, countersIn, metricCh, errCh)
+				c.Prepare(ctx, gaugesIn, countersIn, metricCh, errCh)
 			}
 		}()
 
@@ -67,16 +56,26 @@ func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Co
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for gauges := range gaugesIn {
-				for key, value := range gauges {
-					gaugeValue := float64(value)
 
-					metricCh <- types.Metrics{
-						ID:    key,
-						MType: dictionaries.GaugeType,
-						Value: &gaugeValue,
-						Hash:  c.signer.GetHashGauge(key, gaugeValue),
+			for {
+				select {
+				case gauges, ok := <-gaugesIn:
+					if !ok {
+						return
 					}
+
+					for key, value := range gauges {
+						gaugeValue := float64(value)
+
+						metricCh <- types.Metrics{
+							ID:    key,
+							MType: dictionaries.GaugeType,
+							Value: &gaugeValue,
+							Hash:  c.signer.GetHashGauge(key, gaugeValue),
+						}
+					}
+				case <-ctx.Done():
+					return
 				}
 			}
 		}()
@@ -84,16 +83,26 @@ func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Co
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for counters := range countersIn {
-				for key, value := range counters {
-					var counterValue = int64(value)
 
-					metricCh <- types.Metrics{
-						ID:    key,
-						MType: dictionaries.CounterType,
-						Delta: &counterValue,
-						Hash:  c.signer.GetHashCounter(key, counterValue),
+			for {
+				select {
+				case counters, ok := <-countersIn:
+					if !ok {
+						return
 					}
+
+					for key, value := range counters {
+						var counterValue = int64(value)
+
+						metricCh <- types.Metrics{
+							ID:    key,
+							MType: dictionaries.CounterType,
+							Delta: &counterValue,
+							Hash:  c.signer.GetHashCounter(key, counterValue),
+						}
+					}
+				case <-ctx.Done():
+					return
 				}
 			}
 		}()
@@ -104,12 +113,12 @@ func (c Sender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Co
 }
 
 // Send Отправка метрик на сервер с определенной периодичностью
-func (c Sender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
+func (c Sender) Send(ctx context.Context, metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
 	defer func() {
 		if err := recover(); err != nil {
 			errCh <- fmt.Errorf("panic: %v", err)
 
-			c.Send(metricCh, reportTick, errCh)
+			c.Send(ctx, metricCh, reportTick, errCh)
 		}
 	}()
 
@@ -125,12 +134,14 @@ func (c Sender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time,
 			metrics = metrics[:0]
 
 		case metric, ok := <-metricCh:
-			metrics = append(metrics, metric)
-
 			if !ok {
-
 				return
 			}
+
+			metrics = append(metrics, metric)
+
+		case <-ctx.Done():
+			return
 		}
 	}
 }

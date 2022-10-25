@@ -3,6 +3,8 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -94,4 +96,23 @@ func CreateAgentConfig() (*AgentConfig, error) {
 // AddressWithHTTP получение адреса с http префиксом
 func (c AgentConfig) AddressWithHTTP() string {
 	return "http://" + c.Address
+}
+
+func (c AgentConfig) GetServiceIP() (ip string, err error) {
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		return ip, err
+	}
+
+	for _, a := range addresses {
+		if ipNet, ok := a.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			ip = ipNet.IP.String()
+		}
+	}
+
+	if ip == "" {
+		return ip, fmt.Errorf("ip адрес не найден")
+	}
+
+	return ip, nil
 }

@@ -12,6 +12,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -23,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsClient interface {
-	BulkSaveMetrics(ctx context.Context, in *AddBulkMetricsRequest, opts ...grpc.CallOption) (*AddBulkMetricsResponse, error)
+	BulkSaveMetrics(ctx context.Context, in *AddBulkMetricsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type metricsClient struct {
@@ -34,8 +35,8 @@ func NewMetricsClient(cc grpc.ClientConnInterface) MetricsClient {
 	return &metricsClient{cc}
 }
 
-func (c *metricsClient) BulkSaveMetrics(ctx context.Context, in *AddBulkMetricsRequest, opts ...grpc.CallOption) (*AddBulkMetricsResponse, error) {
-	out := new(AddBulkMetricsResponse)
+func (c *metricsClient) BulkSaveMetrics(ctx context.Context, in *AddBulkMetricsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/proto.Metrics/BulkSaveMetrics", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -47,7 +48,7 @@ func (c *metricsClient) BulkSaveMetrics(ctx context.Context, in *AddBulkMetricsR
 // All implementations must embed UnimplementedMetricsServer
 // for forward compatibility
 type MetricsServer interface {
-	BulkSaveMetrics(context.Context, *AddBulkMetricsRequest) (*AddBulkMetricsResponse, error)
+	BulkSaveMetrics(context.Context, *AddBulkMetricsRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedMetricsServer()
 }
 
@@ -55,7 +56,7 @@ type MetricsServer interface {
 type UnimplementedMetricsServer struct {
 }
 
-func (UnimplementedMetricsServer) BulkSaveMetrics(context.Context, *AddBulkMetricsRequest) (*AddBulkMetricsResponse, error) {
+func (UnimplementedMetricsServer) BulkSaveMetrics(context.Context, *AddBulkMetricsRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BulkSaveMetrics not implemented")
 }
 func (UnimplementedMetricsServer) mustEmbedUnimplementedMetricsServer() {}

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -17,15 +18,15 @@ import (
 )
 
 var (
-	buildVersion string
-	buildDate    string
-	buildCommit  string
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
 )
 
 const BuildTemplate = `
-Build version: {{if .version}}{{ .version }}{{ else }}N/A{{ end }}
-Build date: {{if .date}}{{ .date }}{{ else }}N/A{{ end }}
-Build commit: {{if .commit}}{{ .commit }}{{ else }}N/A{{ end }}
+Build version: {{ .version }}
+Build date: {{ .date }}
+Build commit: {{ .commit }}
 `
 
 func main() {
@@ -44,10 +45,6 @@ func main() {
 		log.Fatalf("Error with config: %v", err)
 	}
 
-	var pollTick = time.Tick(config.PollInterval)
-	var reportTick = time.Tick(config.ReportInterval)
-	var reportMain = time.Tick(config.ReportInterval)
-
 	var pollCount types.Counter
 
 	crypt, err := services.NewMetricEncrypt(config.CryptoKey)
@@ -63,29 +60,33 @@ func main() {
 	constants := dictionaries.NewMemConstants()
 	memRepository := repositories.NewMemRepository(constants)
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer stop()
 
 	errCh := make(chan error)
-
 	gaugesCh := make(chan types.Gauges)
 	counterCh := make(chan types.Counters)
-
 	metricCh := make(chan types.Metrics)
-	go sender.Prepare(gaugesCh, counterCh, metricCh, errCh)
-	go sender.Send(metricCh, reportTick, errCh)
+
+	var pollTick = time.Tick(config.PollInterval)
+	var reportTick = time.Tick(config.ReportInterval)
+	var reportMain = time.Tick(config.ReportInterval)
+
+	go sender.Prepare(ctx, gaugesCh, counterCh, metricCh, errCh)
+	go sender.Send(ctx, metricCh, reportTick, errCh)
 
 	for {
 		select {
-		case <-c:
+		case <-ctx.Done():
 			close(gaugesCh)
 			close(counterCh)
+			close(errCh)
 
 			return
 
 		case <-pollTick:
-			go memRepository.GetGauges(gaugesCh, errCh)
-			go memRepository.GetAdditionalGauges(gaugesCh, errCh)
+			go memRepository.GetGauges(ctx, gaugesCh, errCh)
+			go memRepository.GetAdditionalGauges(ctx, gaugesCh, errCh)
 
 			pollCount++
 

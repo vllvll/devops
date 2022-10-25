@@ -2,15 +2,18 @@ syntax = "proto3";
 
 package proto;
 
+import "google/protobuf/empty.proto";
+
 option go_package = "github.com/vllvll/devops/proto";
 
 message Metric {
   string id = 1;
   enum Type {
-    GAUGE = 0;
-    COUNTER = 1;
+    UNKNOWN = 0;
+    GAUGE = 1;
+    COUNTER = 2;
   }
-  Type m_type = 2;
+  Type type = 2;
   optional int64 delta = 3;
   optional double value = 4;
   optional string hash = 5;
@@ -24,10 +27,6 @@ message AddBulkMetricsRequest {
   BulkMetrics metrics = 1;
 }
 
-message AddBulkMetricsResponse {
-  string error = 1;
-}
-
 service Metrics {
-  rpc BulkSaveMetrics(AddBulkMetricsRequest) returns (AddBulkMetricsResponse);
+  rpc BulkSaveMetrics(AddBulkMetricsRequest) returns (google.protobuf.Empty);
 }

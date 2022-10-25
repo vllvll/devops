@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"sync"
 	"time"
 
@@ -28,20 +27,9 @@ type GRPCSender struct {
 
 // NewGRPCSendClient Создание сервиса для отправки данных из агента на сервер
 func NewGRPCSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Encrypt) (*GRPCSender, error) {
-	var ip string
-	addresses, err := net.InterfaceAddrs()
+	ip, err := AgentConfig.GetServiceIP()
 	if err != nil {
-		return nil, err
-	}
-
-	for _, a := range addresses {
-		if ipNet, ok := a.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
-			ip = ipNet.IP.String()
-		}
-	}
-
-	if ip == "" {
-		return nil, fmt.Errorf("ip адрес не найден")
+		return nil, fmt.Errorf("IP адрес не найден")
 	}
 
 	// устанавливаем соединение с сервером
@@ -61,13 +49,13 @@ func NewGRPCSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Enc
 }
 
 // Prepare Подготовка метрик для отправки на сервер
-func (c GRPCSender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics, errCh chan<- error) {
+func (c GRPCSender) Prepare(ctx context.Context, gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics, errCh chan<- error) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
 				errCh <- fmt.Errorf("panic: %v", err)
 
-				c.Prepare(gaugesIn, countersIn, metricCh, errCh)
+				c.Prepare(ctx, gaugesIn, countersIn, metricCh, errCh)
 			}
 		}()
 
@@ -76,16 +64,25 @@ func (c GRPCSender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan type
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for gauges := range gaugesIn {
-				for key, value := range gauges {
-					gaugeValue := float64(value)
-
-					metricCh <- types.Metrics{
-						ID:    key,
-						MType: dictionaries.GaugeType,
-						Value: &gaugeValue,
-						Hash:  c.signer.GetHashGauge(key, gaugeValue),
+			for {
+				select {
+				case gauges, ok := <-gaugesIn:
+					if !ok {
+						return
 					}
+
+					for key, value := range gauges {
+						gaugeValue := float64(value)
+
+						metricCh <- types.Metrics{
+							ID:    key,
+							MType: dictionaries.GaugeType,
+							Value: &gaugeValue,
+							Hash:  c.signer.GetHashGauge(key, gaugeValue),
+						}
+					}
+				case <-ctx.Done():
+					return
 				}
 			}
 		}()
@@ -93,16 +90,26 @@ func (c GRPCSender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan type
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for counters := range countersIn {
-				for key, value := range counters {
-					var counterValue = int64(value)
 
-					metricCh <- types.Metrics{
-						ID:    key,
-						MType: dictionaries.CounterType,
-						Delta: &counterValue,
-						Hash:  c.signer.GetHashCounter(key, counterValue),
+			for {
+				select {
+				case counters, ok := <-countersIn:
+					if !ok {
+						return
 					}
+
+					for key, value := range counters {
+						var counterValue = int64(value)
+
+						metricCh <- types.Metrics{
+							ID:    key,
+							MType: dictionaries.CounterType,
+							Delta: &counterValue,
+							Hash:  c.signer.GetHashCounter(key, counterValue),
+						}
+					}
+				case <-ctx.Done():
+					return
 				}
 			}
 		}()
@@ -113,12 +120,12 @@ func (c GRPCSender) Prepare(gaugesIn <-chan types.Gauges, countersIn <-chan type
 }
 
 // Send Отправка метрик на сервер с определенной периодичностью
-func (c GRPCSender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
+func (c GRPCSender) Send(ctx context.Context, metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
 	defer func() {
 		if err := recover(); err != nil {
 			errCh <- fmt.Errorf("panic: %v", err)
 
-			c.Send(metricCh, reportTick, errCh)
+			c.Send(ctx, metricCh, reportTick, errCh)
 		}
 	}()
 
@@ -134,12 +141,14 @@ func (c GRPCSender) Send(metricCh <-chan types.Metrics, reportTick <-chan time.T
 			metrics = metrics[:0]
 
 		case metric, ok := <-metricCh:
-			metrics = append(metrics, metric)
-
 			if !ok {
-
 				return
 			}
+
+			metrics = append(metrics, metric)
+
+		case <-ctx.Done():
+			return
 		}
 	}
 }
@@ -159,7 +168,7 @@ func (c GRPCSender) push(metrics *[]types.Metrics) error {
 
 		bulkMetrics = append(bulkMetrics, &pb.Metric{
 			Id:    metric.ID,
-			MType: metricType,
+			Type:  metricType,
 			Delta: metric.Delta,
 			Value: metric.Value,
 			Hash:  &metric.Hash,

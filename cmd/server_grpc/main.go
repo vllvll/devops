@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"google.golang.org/protobuf/types/known/emptypb"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -38,9 +40,7 @@ type MetricsServer struct {
 	decrypt    services.Decrypt             // Сервис для расшифрования данных
 }
 
-func (s *MetricsServer) BulkSaveMetrics(ctx context.Context, in *pb.AddBulkMetricsRequest) (*pb.AddBulkMetricsResponse, error) {
-	var response pb.AddBulkMetricsResponse
-
+func (s *MetricsServer) BulkSaveMetrics(_ context.Context, in *pb.AddBulkMetricsRequest) (*emptypb.Empty, error) {
 	var metrics []types.Metrics
 	var counters = types.Counters{}
 	var gauges = types.Gauges{}
@@ -50,11 +50,13 @@ func (s *MetricsServer) BulkSaveMetrics(ctx context.Context, in *pb.AddBulkMetri
 
 	for _, inMetric := range inMetrics {
 		var metricType string
-		switch inMetric.MType {
+		switch inMetric.Type {
 		case pb.Metric_COUNTER:
 			metricType = dictionaries.CounterType
 		case pb.Metric_GAUGE:
 			metricType = dictionaries.GaugeType
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "Metric type does not exist")
 		}
 
 		metrics = append(metrics, types.Metrics{
@@ -88,7 +90,7 @@ func (s *MetricsServer) BulkSaveMetrics(ctx context.Context, in *pb.AddBulkMetri
 		return nil, status.Error(codes.Internal, "Can't save metrics")
 	}
 
-	return &response, nil
+	return new(emptypb.Empty), nil
 }
 
 func trustSubnetInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -138,8 +140,6 @@ func main() {
 		log.Fatalf("Error with database: %v", err)
 	}
 	defer db.Close()
-
-	var storeTick = time.Tick(config.StoreInterval)
 
 	statsRepository := repositories.NewStatsDatabaseRepository(db)
 	if config.DatabaseDsn == "" {
@@ -195,6 +195,7 @@ func main() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	var storeTick = time.Tick(config.StoreInterval)
 
 	for {
 		select {

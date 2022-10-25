@@ -55,8 +55,6 @@ func main() {
 	}
 	defer db.Close()
 
-	var storeTick = time.Tick(config.StoreInterval)
-
 	statsRepository := repositories.NewStatsDatabaseRepository(db)
 	if config.DatabaseDsn == "" {
 		statsRepository = repositories.NewStatsMemoryRepository()
@@ -105,6 +103,7 @@ func main() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	var storeTick = time.Tick(config.StoreInterval)
 
 	for {
 		select {
