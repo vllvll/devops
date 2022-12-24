@@ -53,7 +53,7 @@ func main() {
 	}
 
 	signer := services.NewMetricSigner(config.Key)
-	sender, err := services.NewSendClient(config, signer, crypt)
+	sender, err := services.NewGRPCSendClient(config, signer, crypt)
 	if err != nil {
 		log.Fatalf("Ошибка с иницализацией сервиса http клиента: %v", err)
 	}

@@ -2,6 +2,7 @@
 package repositories
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -20,8 +21,8 @@ type Mem struct {
 }
 
 type MemRepository interface {
-	GetGauges(outGauges chan<- types.Gauges, errCh chan<- error)
-	GetAdditionalGauges(outGauges chan<- types.Gauges, errCh chan<- error)
+	GetGauges(ctx context.Context, outGauges chan<- types.Gauges, errCh chan<- error)
+	GetAdditionalGauges(ctx context.Context, outGauges chan<- types.Gauges, errCh chan<- error)
 }
 
 // NewMemRepository Создание репозитория, который возвращает данные о системе
@@ -32,12 +33,12 @@ func NewMemRepository(constants dictionaries.DictionaryInterface) MemRepository 
 }
 
 // GetGauges Получение основных данных из runtime.ReadMemStats в формате Gauge
-func (m *Mem) GetGauges(outGauges chan<- types.Gauges, errCh chan<- error) {
+func (m *Mem) GetGauges(ctx context.Context, outGauges chan<- types.Gauges, errCh chan<- error) {
 	defer func() {
 		if err := recover(); err != nil {
 			errCh <- fmt.Errorf("panic: %v", err)
 
-			m.GetGauges(outGauges, errCh)
+			m.GetGauges(ctx, outGauges, errCh)
 		}
 	}()
 
@@ -73,12 +74,12 @@ func (m *Mem) GetGauges(outGauges chan<- types.Gauges, errCh chan<- error) {
 }
 
 // GetAdditionalGauges Получение дополнительных данных из mem.VirtualMemory в формате Gauge
-func (m *Mem) GetAdditionalGauges(outGauges chan<- types.Gauges, errCh chan<- error) {
+func (m *Mem) GetAdditionalGauges(ctx context.Context, outGauges chan<- types.Gauges, errCh chan<- error) {
 	defer func() {
 		if err := recover(); err != nil {
 			errCh <- fmt.Errorf("panic: %v", err)
 
-			m.GetAdditionalGauges(outGauges, errCh)
+			m.GetAdditionalGauges(ctx, outGauges, errCh)
 		}
 	}()
 

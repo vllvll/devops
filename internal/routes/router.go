@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/vllvll/devops/internal/handlers"
+	"github.com/vllvll/devops/internal/middlewares"
 )
 
 type Router struct {
@@ -14,7 +15,7 @@ type Router struct {
 }
 
 // NewRouter Регистрируем middleware и возвращаем роутер
-func NewRouter(handlers handlers.Handler) Router {
+func NewRouter(handlers handlers.Handler, trustedSubnet string) Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -22,6 +23,7 @@ func NewRouter(handlers handlers.Handler) Router {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(5))
+	r.Use(middlewares.TrustedSubnet(trustedSubnet))
 
 	// r.Mount("/debug", middleware.Profiler())
 

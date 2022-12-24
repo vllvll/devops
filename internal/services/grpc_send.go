@@ -3,45 +3,53 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
-	"github.com/go-resty/resty/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
 	conf "github.com/vllvll/devops/internal/config"
 	"github.com/vllvll/devops/internal/dictionaries"
 	"github.com/vllvll/devops/internal/types"
+	pb "github.com/vllvll/devops/proto"
 )
 
-type Sender struct {
-	Client  *resty.Client // HTTP клиент
-	signer  Signer        // Сервис для подписи данных
-	encrypt Encrypt       // Сервис для ассиметричного шифрования
+type GRPCSender struct {
+	Client  pb.MetricsClient
+	signer  Signer  // Сервис для подписи данных
+	encrypt Encrypt // Сервис для ассиметричного шифрования
+	ip      string  // IP клиента
 }
 
-// NewSendClient Создание сервиса для отправки данных из агента на сервер
-func NewSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Encrypt) (*Sender, error) {
+// NewGRPCSendClient Создание сервиса для отправки данных из агента на сервер
+func NewGRPCSendClient(AgentConfig *conf.AgentConfig, signer Signer, encrypt Encrypt) (*GRPCSender, error) {
 	ip, err := AgentConfig.GetServiceIP()
 	if err != nil {
 		return nil, fmt.Errorf("IP адрес не найден")
 	}
 
-	client := resty.New().
-		SetBaseURL(AgentConfig.AddressWithHTTP()).
-		SetHeader("Content-Type", "application/json").
-		SetHeader("X-Real-IP", ip)
+	// устанавливаем соединение с сервером
+	conn, err := grpc.Dial(AgentConfig.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	return &Sender{
-		Client:  client,
+	c := pb.NewMetricsClient(conn)
+
+	return &GRPCSender{
+		Client:  c,
 		signer:  signer,
 		encrypt: encrypt,
+		ip:      ip,
 	}, nil
 }
 
 // Prepare Подготовка метрик для отправки на сервер
-func (c Sender) Prepare(ctx context.Context, gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics, errCh chan<- error) {
+func (c GRPCSender) Prepare(ctx context.Context, gaugesIn <-chan types.Gauges, countersIn <-chan types.Counters, metricCh chan<- types.Metrics, errCh chan<- error) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -56,7 +64,6 @@ func (c Sender) Prepare(ctx context.Context, gaugesIn <-chan types.Gauges, count
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-
 			for {
 				select {
 				case gauges, ok := <-gaugesIn:
@@ -113,7 +120,7 @@ func (c Sender) Prepare(ctx context.Context, gaugesIn <-chan types.Gauges, count
 }
 
 // Send Отправка метрик на сервер с определенной периодичностью
-func (c Sender) Send(ctx context.Context, metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
+func (c GRPCSender) Send(ctx context.Context, metricCh <-chan types.Metrics, reportTick <-chan time.Time, errCh chan<- error) {
 	defer func() {
 		if err := recover(); err != nil {
 			errCh <- fmt.Errorf("panic: %v", err)
@@ -147,23 +154,34 @@ func (c Sender) Send(ctx context.Context, metricCh <-chan types.Metrics, reportT
 }
 
 // Внутренний метод для отправки метрик на сервер
-func (c Sender) push(metrics *[]types.Metrics) error {
-	content, err := json.Marshal(*metrics)
-	if err != nil {
-		return err
-	}
+func (c GRPCSender) push(metrics *[]types.Metrics) error {
+	var bulkMetrics []*pb.Metric
 
-	if c.encrypt != nil {
-		content, err = c.encrypt.Encrypt(content)
-		if err != nil {
-			return err
+	for _, metric := range *metrics {
+		var metricType pb.Metric_Type
+		switch metric.MType {
+		case dictionaries.CounterType:
+			metricType = pb.Metric_COUNTER
+		case dictionaries.GaugeType:
+			metricType = pb.Metric_GAUGE
 		}
+
+		bulkMetrics = append(bulkMetrics, &pb.Metric{
+			Id:    metric.ID,
+			Type:  metricType,
+			Delta: metric.Delta,
+			Value: metric.Value,
+			Hash:  &metric.Hash,
+		})
 	}
 
-	_, err = c.Client.R().
-		SetBody(content).
-		Post("/updates/")
+	request := pb.AddBulkMetricsRequest{}
+	request.Metrics = &pb.BulkMetrics{Metrics: bulkMetrics}
 
+	md := metadata.New(map[string]string{"ip": c.ip})
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
+	_, err := c.Client.BulkSaveMetrics(ctx, &request)
 	if err != nil {
 		return err
 	}

@@ -55,8 +55,6 @@ func main() {
 	}
 	defer db.Close()
 
-	var storeTick = time.Tick(config.StoreInterval)
-
 	statsRepository := repositories.NewStatsDatabaseRepository(db)
 	if config.DatabaseDsn == "" {
 		statsRepository = repositories.NewStatsMemoryRepository()
@@ -69,7 +67,7 @@ func main() {
 
 	signer := services.NewMetricSigner(config.Key)
 	handler := handlers.NewHandler(statsRepository, signer, db, decrypt)
-	router := routes.NewRouter(*handler)
+	router := routes.NewRouter(*handler, config.TrustedSubnet)
 	router.RegisterHandlers()
 
 	consumer, err := file.NewFileConsumer(config.StoreFile)
@@ -105,6 +103,7 @@ func main() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	var storeTick = time.Tick(config.StoreInterval)
 
 	for {
 		select {
